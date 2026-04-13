@@ -475,7 +475,6 @@ def generate_initial_states(
                 {"Walkers found": f"{len(initial_states)}/{nwalkers}"}
             )
         if len(initial_states) >= nwalkers:
-            print(f"Found {nwalkers} valid initial states in {_ + 1} tries.")
             break
 
     if len(initial_states) < nwalkers:
@@ -485,6 +484,7 @@ def generate_initial_states(
             f" Consider increasing `max_tries` or relaxing the priors."
         )
 
+    print(f"Found {nwalkers} valid initial states in {_ + 1} tries.")
     initial_states = np.array(initial_states)
     return initial_states
 
