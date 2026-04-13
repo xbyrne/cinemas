@@ -16,7 +16,8 @@ import numpy as np
 import observation_classes as obs
 import pandas as pd
 import rebound
-from emcee import AutocorrError, EnsembleSampler
+from emcee import EnsembleSampler
+from emcee.autocorr import AutocorrError
 from spock import FeatureClassifier
 from tqdm import tqdm
 
@@ -58,9 +59,9 @@ def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
     system_data = system_catalogue[columns_to_return]
 
     # Convert masses to Earth masses (initially in Jupiter masses)
-    system_data.loc[
-        :, system_data.columns.str.startswith("mass")
-    ] *= constants.MJUP_MEARTH
+    system_data.loc[:, system_data.columns.str.startswith("mass")] *= (
+        constants.MJUP_MEARTH
+    )
 
     return system_data
 
@@ -221,9 +222,9 @@ def unpack_theta(theta: np.ndarray):
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
 
-    assert (
-        theta.shape[-1] - 2
-    ) % 4 == 0, "`theta` should have 2 + 4 * n_planets parameters"
+    assert (theta.shape[-1] - 2) % 4 == 0, (
+        "`theta` should have 2 + 4 * n_planets parameters"
+    )
     n_planets = (theta.shape[-1] - 2) // 4
 
     star_mass = theta[..., 0]
@@ -474,7 +475,7 @@ def generate_initial_states(
                 {"Walkers found": f"{len(initial_states)}/{nwalkers}"}
             )
         if len(initial_states) >= nwalkers:
-            print(f"Found {nwalkers} valid initial states in {_+1} tries.")
+            print(f"Found {nwalkers} valid initial states in {_ + 1} tries.")
             break
 
     if len(initial_states) < nwalkers:
