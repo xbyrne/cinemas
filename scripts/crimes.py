@@ -510,7 +510,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         a_min=0.001,
         a_max=None,
     )
-    eccentricities = np.random.uniform(0, 1e-6, size=system_obs.n_planets)
+    eccentricities = np.random.uniform(0, 1e-3, size=system_obs.n_planets)
     omegas = np.random.uniform(0, 360, size=system_obs.n_planets)
 
     proposed_theta = np.concatenate(
@@ -533,7 +533,7 @@ def main():
         "../data/exoplanet.eu_catalog_15-03-26_22_54_01.csv"
     )
 
-    results_path = Path("../results/mcmc/parallelised/barnard_samples.npz")
+    results_path = Path("../results/mcmc/barnard_samples_circularish.npz")
     results_path.parent.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(42)
@@ -546,7 +546,7 @@ def main():
     np.savez_compressed(
         results_path, samples=samples, tau=tau, acceptance_fraction=acceptance_fraction
     )
-    print(f"Results saved to {results_path}.")
+    print(f"Results saved to {results_path} .")
     print(f"Autocorrelation time: {tau}")
     print(f"Acceptance fraction: {acceptance_fraction}")
 
