@@ -9,6 +9,7 @@ using the constraint of long-term dynamical stability. The framework uses the st
 classifier from SPOCK.
 """
 
+from multiprocessing import Pool
 from pathlib import Path
 
 import constants
@@ -59,9 +60,9 @@ def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
     system_data = system_catalogue[columns_to_return]
 
     # Convert masses to Earth masses (initially in Jupiter masses)
-    system_data.loc[:, system_data.columns.str.startswith("mass")] *= (
-        constants.MJUP_MEARTH
-    )
+    system_data.loc[
+        :, system_data.columns.str.startswith("mass")
+    ] *= constants.MJUP_MEARTH
 
     return system_data
 
@@ -222,9 +223,9 @@ def unpack_theta(theta: np.ndarray):
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
 
-    assert (theta.shape[-1] - 2) % 4 == 0, (
-        "`theta` should have 2 + 4 * n_planets parameters"
-    )
+    assert (
+        theta.shape[-1] - 2
+    ) % 4 == 0, "`theta` should have 2 + 4 * n_planets parameters"
     n_planets = (theta.shape[-1] - 2) // 4
 
     star_mass = theta[..., 0]
@@ -430,25 +431,26 @@ def run_mcmc_sampling(
 
     spock_classifier = FeatureClassifier()
 
-    sampler = EnsembleSampler(
-        nwalkers=nwalkers,
-        ndim=2 + 4 * system_obs.n_planets,
-        log_prob_fn=log_posterior,
-        args=[system_obs, spock_classifier],
-        vectorize=True,
-    )
-    sampler.run_mcmc(initial_states, nsteps, progress=True)
-
-    samples = sampler.get_chain()
-    acceptance_fraction = sampler.acceptance_fraction
-    try:
-        tau = sampler.get_autocorr_time()
-    except AutocorrError as e:
-        print(
-            "Warning: Autocorrelation time could not be estimated reliably. Error:",
-            e,
+    with Pool() as pool:
+        sampler = EnsembleSampler(
+            nwalkers=nwalkers,
+            ndim=2 + 4 * system_obs.n_planets,
+            log_prob_fn=log_posterior,
+            args=[system_obs, spock_classifier],
+            pool=pool,
         )
-        tau = -1.0
+        sampler.run_mcmc(initial_states, nsteps, progress=True)
+
+        samples = sampler.get_chain()
+        acceptance_fraction = sampler.acceptance_fraction
+        try:
+            tau = sampler.get_autocorr_time()
+        except AutocorrError as e:
+            print(
+                "Warning: Autocorrelation time could not be estimated reliably. Error:",
+                e,
+            )
+            tau = -1.0
 
     return samples, tau, acceptance_fraction
 
