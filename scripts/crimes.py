@@ -59,9 +59,9 @@ def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
     system_data = system_catalogue[columns_to_return]
 
     # Convert masses to Earth masses (initially in Jupiter masses)
-    system_data.loc[:, system_data.columns.str.startswith("mass")] *= (
-        constants.MJUP_MEARTH
-    )
+    system_data.loc[
+        :, system_data.columns.str.startswith("mass")
+    ] *= constants.MJUP_MEARTH
 
     return system_data
 
@@ -222,9 +222,9 @@ def unpack_theta(theta: np.ndarray):
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
 
-    assert (theta.shape[-1] - 2) % 4 == 0, (
-        "`theta` should have 2 + 4 * n_planets parameters"
-    )
+    assert (
+        theta.shape[-1] - 2
+    ) % 4 == 0, "`theta` should have 2 + 4 * n_planets parameters"
     n_planets = (theta.shape[-1] - 2) // 4
 
     star_mass = theta[..., 0]
@@ -510,11 +510,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         a_min=0.001,
         a_max=None,
     )
-    eccentricities = np.clip(
-        np.random.normal(system_obs.eccentricities, system_obs.eccentricities_errors),
-        a_min=0.001,
-        a_max=0.999,
-    )
+    eccentricities = np.random.uniform(0, 1e-6, size=system_obs.n_planets)
     omegas = np.random.uniform(0, 360, size=system_obs.n_planets)
 
     proposed_theta = np.concatenate(
