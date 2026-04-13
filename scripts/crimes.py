@@ -533,7 +533,7 @@ def main():
         "../data/exoplanet.eu_catalog_15-03-26_22_54_01.csv"
     )
 
-    results_path = Path("../results/mcmc/barnard_samples_circularish.npz")
+    results_path = Path("../results/mcmc/barnard_samples_5k.npz")
     results_path.parent.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(42)
@@ -541,7 +541,7 @@ def main():
     system_obs = load_system_observations("Barnard's star", EXOPLANET_CATALOGUE_PATH)
 
     samples, tau, acceptance_fraction = run_mcmc_sampling(
-        system_obs, nwalkers=50, nsteps=1000
+        system_obs, nwalkers=50, nsteps=5000
     )
     np.savez_compressed(
         results_path, samples=samples, tau=tau, acceptance_fraction=acceptance_fraction
