@@ -43,6 +43,17 @@ def select_multiplanet_rv_systems(catalogue_path: Path) -> pd.DataFrame:
     return multiplanet_rv_systems
 
 
+def is_compact(system_data: pd.DataFrame) -> bool:
+    """
+    Checks if there is at least one triplet of planets with period ratios between
+    adjacent planets < 2 (see Tamayo+20).
+    """
+    periods = system_data["orbital_period"].values
+    period_ratios = periods[1:] / periods[:-1]
+    compact_pairs = np.sum(period_ratios < 2)
+    return compact_pairs >= 2
+
+
 def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
     """
     Extract the relevant data for a given star from the catalogue, to be used as priors.
