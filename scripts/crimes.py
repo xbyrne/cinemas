@@ -359,9 +359,6 @@ def log_likelihood(
         )
         spock_classifier = FeatureClassifier()
 
-    star_mass, inclination, minimum_masses, periods, eccentricities, omegas = (
-        unpack_theta(theta)
-    )
     sims = create_rebound_simulations_from_theta(theta)
 
     stability_prob = spock_classifier.predict_stable(sims)
