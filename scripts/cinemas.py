@@ -1,25 +1,27 @@
 """
-crimes.py
-=========
-ConstRaining Inclinations and Masses of Exoplanets by stability
----------------------------------------------------------------
+cinemas.py
+==========
+Constraining INclinations of Exoplanets and their MAsses by Stability
+---------------------------------------------------------------------
 A framework for obtaining Bayesian constraints on the inclinations, and hence true
 masses (as well as other orbital parameters) of exoplanets in multi-planet systems by
 using the constraint of long-term dynamical stability. The framework uses the stability
-classifier from SPOCK.
+classifier from SPOCK. The result? Absolute cinema.
 """
 
 from pathlib import Path
 
-import constants
 import numpy as np
-import observation_classes as obs
 import pandas as pd
-import rebound
+from tqdm import tqdm
+
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
+import rebound
 from spock import FeatureClassifier
-from tqdm import tqdm
+
+import constants
+import observation_classes as obs
 
 # ============
 # Data loading
@@ -561,7 +563,7 @@ def main():
 
     for system in COMPACT_MULTIPLANET_RV_SYSTEMS:
         print("\n" + "=" * 50)
-        print(f"Perpetrating CRIMES on {system}...")
+        print(f"In CINEMAS now: {system}...")
 
         results_path = RESULTS_DIR / f"{system.lower().replace(' ', '_')}_10k.npz"
 

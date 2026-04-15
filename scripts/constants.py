@@ -1,7 +1,7 @@
 """
 constants.py
 ============
-Constants for the CRIMES script.
+Constants for the CINEMAS script.
 """
 
 FIELDS_TO_USE = [

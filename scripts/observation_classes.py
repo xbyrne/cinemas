@@ -1,7 +1,7 @@
 """
 observation_classes.py
 ======================
-Classes for handling observational data, to be used as priors for the CRIMES analysis.
+Classes for handling observational data, to be used as priors for the CINEMAS analysis.
 """
 
 import numpy as np
