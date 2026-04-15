@@ -539,26 +539,50 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
 
 
 def main():
+
+    COMPACT_MULTIPLANET_RV_SYSTEMS = [
+        "Barnard's star",
+        "GJ 667 C",
+        "HD 158259",
+        "HD 184010",
+        "HD 215152",
+        "HD 28471",
+        "HD 34445",
+        "HD 38677",
+        "HD 40307",
+        "YZ Cet",
+    ]
+
     EXOPLANET_CATALOGUE_PATH = Path(
         "../data/exoplanet.eu_catalog_15-03-26_22_54_01.csv"
     )
+    RESULTS_DIR = Path("../results/mcmc")
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    results_path = Path("../results/mcmc/barnard_samples_10k.npz")
-    results_path.parent.mkdir(parents=True, exist_ok=True)
+    for system in COMPACT_MULTIPLANET_RV_SYSTEMS:
+        print("\n" + "=" * 50)
+        print(f"Perpetrating CRIMES on {system}...")
 
-    np.random.seed(42)
+        results_path = RESULTS_DIR / f"{system.lower().replace(' ', '_')}_10k.npz"
 
-    system_obs = load_system_observations("Barnard's star", EXOPLANET_CATALOGUE_PATH)
+        np.random.seed(42)
 
-    samples, tau, acceptance_fraction = run_mcmc_sampling(
-        system_obs, nwalkers=50, nsteps=10000
-    )
-    np.savez_compressed(
-        results_path, samples=samples, tau=tau, acceptance_fraction=acceptance_fraction
-    )
-    print(f"Results saved to {results_path} .")
-    print(f"Autocorrelation time: {tau}")
-    print(f"Acceptance fraction: {acceptance_fraction}")
+        system_obs = load_system_observations(system, EXOPLANET_CATALOGUE_PATH)
+
+        samples, tau, acceptance_fraction = run_mcmc_sampling(
+            system_obs, nsteps=10000, nwalkers=None  # Use default number of walkers
+        )
+        np.savez_compressed(
+            results_path,
+            samples=samples,
+            tau=tau,
+            acceptance_fraction=acceptance_fraction,
+        )
+        print(f"Results saved to {results_path.resolve()} .")
+        print(f"Autocorrelation time: {tau}")
+        print(f"Acceptance fraction: {acceptance_fraction}")
+
+        print("\n" + "=" * 50 + "\n\n")
 
 
 if __name__ == "__main__":
