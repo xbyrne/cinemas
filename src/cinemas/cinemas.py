@@ -20,8 +20,8 @@ from emcee.autocorr import AutocorrError
 import rebound
 from spock import FeatureClassifier
 
-import constants
-import observation_classes as obs
+from . import constants
+from . import observation_classes as obs
 
 # ============
 # Data loading

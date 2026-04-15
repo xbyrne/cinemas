@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cinemas"
+version = "0.1.0.dev0"
+description = "Constraining INclinations of Exoplanets and their MAsses by Stability"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Xander Byrne"}]
+dependencies = [
+    "numpy>=1.20",
+    "pandas>=1.0",
+    "tqdm>=4.50",
+    "emcee>=3.0",
+    "rebound>=3.0",
+    "spock>=1.0",
+]
+
+[tool.setuptools]
+packages = ["cinemas"]
+
+[tool.setuptools.package-dir]
+"" = "src"
