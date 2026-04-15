@@ -503,23 +503,25 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
     This is used to generate initial states for the MCMC walkers.
     """
     stellar_mass = np.clip(
-        np.random.normal(system_obs.star_mass.mean, system_obs.star_mass.error),
+        np.random.normal(system_obs.star_mass.mean, system_obs.star_mass.error / 10),
         a_min=0.01,
         a_max=None,
     )
-    inclination_deg = np.random.uniform(constants.I_MIN, constants.I_MAX)
+    inclination_deg = np.random.uniform(30, 40)
     minimum_masses = np.clip(
-        np.random.normal(system_obs.minimum_masses, system_obs.minimum_masses_errors),
+        np.random.normal(
+            system_obs.minimum_masses, system_obs.minimum_masses_errors / 10
+        ),
         a_min=0.01,
         a_max=None,
     )
     periods = np.clip(
-        np.random.normal(system_obs.periods, system_obs.periods_errors),
+        np.random.normal(system_obs.periods, system_obs.periods_errors / 10),
         a_min=0.001,
         a_max=None,
     )
     eccentricities = np.random.uniform(0, 1e-3, size=system_obs.n_planets)
-    omegas = np.random.uniform(0, 360, size=system_obs.n_planets)
+    omegas = np.random.uniform(175, 185, size=system_obs.n_planets)
 
     proposed_theta = np.concatenate(
         (
@@ -541,7 +543,7 @@ def main():
         "../data/exoplanet.eu_catalog_15-03-26_22_54_01.csv"
     )
 
-    results_path = Path("../results/mcmc/barnard_samples_circularish.npz")
+    results_path = Path("../results/mcmc/barnard_samples_10k.npz")
     results_path.parent.mkdir(parents=True, exist_ok=True)
 
     np.random.seed(42)
@@ -549,7 +551,7 @@ def main():
     system_obs = load_system_observations("Barnard's star", EXOPLANET_CATALOGUE_PATH)
 
     samples, tau, acceptance_fraction = run_mcmc_sampling(
-        system_obs, nwalkers=50, nsteps=1000
+        system_obs, nwalkers=50, nsteps=10000
     )
     np.savez_compressed(
         results_path, samples=samples, tau=tau, acceptance_fraction=acceptance_fraction
