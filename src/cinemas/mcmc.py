@@ -142,7 +142,9 @@ def run_mcmc_sampling(
     n_planets = system_obs.n_planets
 
     if nwalkers is None:
+        print("Number of walkers not specified. Using default of 2(2 + 4 n_planets),")
         nwalkers = 2 * (2 + 4 * n_planets)
+        print(f" which in this case is {nwalkers} walkers ({n_planets} planets).")
 
     if initial_states is None:
         # Initialize walkers in a small Gaussian ball around the observed values
