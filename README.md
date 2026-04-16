@@ -26,7 +26,7 @@ pip install cinemas
 
 Or, for development, clone the repository and install in editable mode:
 
-```
+```bash
 git clone https://github.com/xbyrne/cinemas
 cd cinemas
 pip install -e ".[dev]"
@@ -36,7 +36,7 @@ pip install -e ".[dev]"
 
 ### Loading observational data
 
-```
+```python
 import pandas as pd
 import cinemas
 
@@ -50,7 +50,7 @@ system_obs = cinemas.load_system_observations(
 
 ### Running MCMC sampling
 
-```
+```python
 import cinemas
 
 # Run MCMC to constrain the inclination and true masses
