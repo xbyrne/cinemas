@@ -2,6 +2,11 @@
 
 **Constraining INclinations of Exoplanets and their MAsses by Stability**
 
+[![PyPI version](https://badge.fury.io/py/cinemas.svg)](https://badge.fury.io/py/cinemas)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 ![CINEMAS](https://raw.githubusercontent.com/xbyrne/cinemas/main/absolute_cinemas.png)
 
 CINEMAS is a Bayesian framework for constraining the inclinations, and hence the true masses, of exoplanets in compact multi-planet systems detected with the radial velocity (RV) method.
