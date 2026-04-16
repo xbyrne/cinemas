@@ -62,6 +62,6 @@ print(f"Acceptance fraction: {acceptance_fraction}")
 
 ## References
 
-- [SPOCK: Stability Prediction Of exoplanet Configurations](https://github.com/dtamayo/spock/)
+- [SPOCK: Stability of Planetary Orbital Configurations Klassifier](https://github.com/dtamayo/spock/)
 - [emcee: The MCMC Hammer](https://github.com/dfm/emcee)
-- [REBOUND: N-body simulation](https://github.com/hannorein/rebound)
+- [REBOUND: N-body simulations](https://github.com/hannorein/rebound)
