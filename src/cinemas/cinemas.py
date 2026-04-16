@@ -555,10 +555,13 @@ def main():
         "YZ Cet",
     ]
 
-    EXOPLANET_CATALOGUE_PATH = Path(
-        "../data/exoplanet.eu_catalog_15-03-26_22_54_01.csv"
-    )
-    RESULTS_DIR = Path("../results/mcmc")
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    ROOT_DIR = SCRIPT_DIR.parent.parent
+
+    DATA_DIR = ROOT_DIR / "data"
+    EXOPLANET_CATALOGUE_PATH = DATA_DIR / "exoplanet.eu_catalog_15-03-26_22_54_01.csv"
+
+    RESULTS_DIR = ROOT_DIR / "results"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     for system in COMPACT_MULTIPLANET_RV_SYSTEMS:
