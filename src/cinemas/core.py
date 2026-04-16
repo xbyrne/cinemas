@@ -543,7 +543,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
 def main():
 
     COMPACT_MULTIPLANET_RV_SYSTEMS = [
-        "Barnard's star",
+        # "Barnard's star",
         "GJ 667 C",
         "HD 158259",
         "HD 184010",
@@ -574,9 +574,16 @@ def main():
 
         system_obs = load_system_observations(system, EXOPLANET_CATALOGUE_PATH)
 
-        samples, tau, acceptance_fraction = run_mcmc_sampling(
-            system_obs, nsteps=10000, nwalkers=None  # Use default number of walkers
-        )
+        try:
+            samples, tau, acceptance_fraction = run_mcmc_sampling(
+                system_obs,
+                nsteps=10000,
+                nwalkers=None,  # Use default number of walkers
+            )
+        except ValueError as e:
+            print(f"Error during MCMC sampling for {system}: {e}")
+            continue
+
         np.savez_compressed(
             results_path,
             samples=samples,
