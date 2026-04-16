@@ -12,6 +12,7 @@ classifier from SPOCK. The result? Absolute cinema.
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from . import dataloading, mcmc
 
@@ -32,10 +33,11 @@ def main():
     ]
 
     SCRIPT_DIR = Path(__file__).resolve().parent
-    ROOT_DIR = SCRIPT_DIR.parent
+    ROOT_DIR = SCRIPT_DIR.parent.parent
 
     DATA_DIR = ROOT_DIR / "data"
     EXOPLANET_CATALOGUE_PATH = DATA_DIR / "exoplanet.eu_catalog_15-03-26_22_54_01.csv"
+    exoplanet_catalogue = pd.read_csv(EXOPLANET_CATALOGUE_PATH)
 
     RESULTS_DIR = ROOT_DIR / "results"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -48,9 +50,7 @@ def main():
 
         np.random.seed(42)
 
-        system_obs = dataloading.load_system_observations(
-            system, EXOPLANET_CATALOGUE_PATH
-        )
+        system_obs = dataloading.load_system_observations(system, exoplanet_catalogue)
 
         try:
             samples, tau, acceptance_fraction = mcmc.run_mcmc_sampling(

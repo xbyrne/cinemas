@@ -4,8 +4,6 @@ dataloading.py
 Functions for loading and processing observational data for the CINEMAS analysis.
 """
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
@@ -13,13 +11,13 @@ from . import constants
 from . import observation_classes as obs
 
 
-def select_compact_multiplanet_rv_systems(catalogue_path: Path) -> pd.DataFrame:
+def select_compact_multiplanet_rv_systems(
+    exoplanet_catalogue: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Selects multi-planet systems discovered by the radial velocity method from an
     exoplanet.eu-like catalogue
     """
-    exoplanet_catalogue = pd.read_csv(catalogue_path)
-
     compact_multiplanet_rv_systems = exoplanet_catalogue.groupby("star_name").filter(
         lambda x: (x["detection_type"] == "Radial Velocity").all()
         & (len(x) > 2)
@@ -41,7 +39,7 @@ def is_compact(system_data: pd.DataFrame) -> bool:
     return compact_pairs >= 2
 
 
-def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
+def get_system_data(star_name: str, catalogue: pd.DataFrame) -> pd.DataFrame:
     """
     Extract the relevant data for a given star from the catalogue, to be used as priors.
     NB: Masses are returned in M_E and periods in days.
@@ -65,16 +63,16 @@ def get_system_data(catalogue: pd.DataFrame, star_name: str) -> pd.DataFrame:
 
 
 def load_system_observations(
-    star_name: str, catalogue_path: Path
+    star_name: str, exoplanet_catalogue: pd.DataFrame
 ) -> obs.SystemObservations:
     """
     Load the prior constraints for a given star from the catalogue, and return them as a
     SystemObservations object.
     """
     compact_multiplanet_rv_systems = select_compact_multiplanet_rv_systems(
-        catalogue_path
+        exoplanet_catalogue
     )
-    system_data = get_system_data(compact_multiplanet_rv_systems, star_name)
+    system_data = get_system_data(star_name, compact_multiplanet_rv_systems)
 
     planet_observations = []
     for planet in system_data["name"]:

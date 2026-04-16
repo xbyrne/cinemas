@@ -6,7 +6,31 @@ Tests for the data loading functions in the CINEMAS package.
 
 from pytest import approx
 
-from cinemas import package_planet_observations
+from cinemas.dataloading import (
+    is_compact,
+    package_planet_observations,
+    select_compact_multiplanet_rv_systems,
+)
+
+
+def test_is_compact_on_compact_system(example_system_data_compact):
+    """Test that is_compact correctly identifies a compact system."""
+    assert is_compact(example_system_data_compact)
+
+
+def test_is_compact_on_non_compact_system(example_system_data_non_compact):
+    """Test that is_compact correctly identifies a non-compact system."""
+    assert not is_compact(example_system_data_non_compact)
+
+
+def test_select_compact_multiplanet_rv_systems(example_exoplanet_catalogue):
+    """
+    Test that select_compact_multiplanet_rv_systems correctly selects compact systems.
+    """
+    compact_systems = select_compact_multiplanet_rv_systems(example_exoplanet_catalogue)
+
+    assert len(compact_systems) == 3
+    assert set(compact_systems["star_name"].unique()) == {"Star A"}
 
 
 def test_package_planet_observations_on_example_row(example_planet_data_row):
