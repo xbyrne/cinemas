@@ -4,7 +4,6 @@ test_dataloading.py
 Tests for the data loading functions in the CINEMAS package.
 """
 
-import numpy as np
 from pytest import approx
 
 from cinemas import package_planet_observations

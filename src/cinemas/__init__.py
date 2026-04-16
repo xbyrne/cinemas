@@ -9,11 +9,8 @@ multi-planet systems using dynamical stability as a constraint.
 
 __version__ = "0.1.0.dev0"
 
-from .core import (
-    load_system_observations,
-    run_mcmc_sampling,
-    package_planet_observations,
-)
+from .dataloading import load_system_observations, package_planet_observations
+from .mcmc import run_mcmc_sampling
 
 __all__ = [
     "__version__",
