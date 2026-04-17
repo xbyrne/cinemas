@@ -7,6 +7,7 @@ Fixtures for testing the CINEMAS package.
 import pandas as pd
 import pytest
 
+from cinemas import constants
 from cinemas.observation_classes import (
     Observation,
     PlanetObservations,
@@ -155,3 +156,25 @@ def example_exoplanet_catalogue(
         [example_system_data_compact, example_system_data_non_compact],
         ignore_index=True,
     )
+
+
+@pytest.fixture
+def example_catalogue_for_system_data() -> pd.DataFrame:
+    """A minimal catalogue row with all required fields for get_system_data tests."""
+    row = {
+        "star_name": "Star A",
+        "name": "Planet b",
+        "planet_status": "Confirmed",
+    }
+
+    for field in constants.FIELDS_TO_USE:
+        row[field] = 1.0
+        row[f"{field}_error_min"] = 0.1
+        row[f"{field}_error_max"] = 0.2
+
+    # Keep stellar mass values distinct to check they are not mass-converted.
+    row["star_mass"] = 1.2
+    row["star_mass_error_min"] = 0.05
+    row["star_mass_error_max"] = 0.07
+
+    return pd.DataFrame([row])
