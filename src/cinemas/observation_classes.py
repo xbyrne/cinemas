@@ -5,6 +5,9 @@ Classes for handling observational data, to be used as priors for the CINEMAS an
 """
 
 import numpy as np
+import rebound
+
+from . import likelihood
 
 
 class Observation:
@@ -65,3 +68,22 @@ class SystemObservations:
         self.eccentricities_errors = np.array(
             [planet.eccentricity.error for planet in planet_observations]
         )
+
+    def plot(self, show_eccentricities=False, omegas=None, **kwargs):
+        if show_eccentricities:
+            eccentricities = self.eccentricities
+        else:
+            eccentricities = np.zeros_like(self.eccentricities)
+        if omegas is None:
+            omegas = np.random.uniform(0, 360, size=self.n_planets)
+
+        sim = likelihood.create_rebound_simulations(
+            star_mass=self.star_mass.mean,
+            masses=self.minimum_masses,
+            periods=self.periods,
+            eccentricities=eccentricities,
+            omegas=omegas,
+        )
+
+        orbit_plot = rebound.OrbitPlot(sim, **kwargs)
+        return orbit_plot.fig
