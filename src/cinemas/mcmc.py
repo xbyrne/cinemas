@@ -52,28 +52,30 @@ def log_posterior(
 
 
 def generate_initial_states(
-    system_obs: obs.SystemObservations, nwalkers: int
+    system_obs: obs.SystemObservations, nwalkers: int, max_tries: int = 1000
 ) -> np.ndarray:
     """
     Generate initial states for the MCMC walkers
     """
     initial_states = []
-    max_tries = 1000
     progress_bar = tqdm(
-        range(max_tries), total=max_tries, desc="Generating initial states"
+        total=nwalkers, desc="Generating initial states", unit="walkers"
     )
     spock_classifier = FeatureClassifier()
-    for _ in progress_bar:
+
+    for attempt in range(max_tries):
         theta_0 = propose_theta(system_obs)
         lp = log_posterior(theta_0, system_obs, spock_classifier)
 
         if np.isfinite(lp):
             initial_states.append(theta_0)
-            progress_bar.set_postfix(
-                {"Walkers found": f"{len(initial_states)}/{nwalkers}"}
-            )
+            progress_bar.update(1)
+
+        progress_bar.set_postfix({"Tries": f"{attempt + 1}/{max_tries}"})
         if len(initial_states) >= nwalkers:
             break
+
+    progress_bar.close()
 
     if len(initial_states) < nwalkers:
         raise ValueError(
@@ -82,7 +84,7 @@ def generate_initial_states(
             f" Consider increasing `max_tries` or relaxing the priors."
         )
 
-    print(f"Found {nwalkers} valid initial states in {_ + 1} tries.")
+    print(f"Found {nwalkers} valid initial states in {attempt + 1} tries.")
     initial_states = np.array(initial_states)
     return initial_states
 
