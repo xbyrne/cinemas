@@ -34,6 +34,12 @@ dependencies = [
 "Bug Tracker" = "https://github.com/xbyrne/cinemas/issues"
 "Documentation" = "https://github.com/xbyrne/cinemas"
 
+[project.optional-dependencies]
+dev = [
+  "ipykernel>=6.29,<7",
+  "pytest>=8",
+]
+
 [tool.setuptools]
 packages = ["cinemas"]
 
