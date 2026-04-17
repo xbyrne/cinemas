@@ -125,14 +125,23 @@ class TestGenerateInitialStates:
             pass
 
         class DummyTqdm:
-            def __init__(self, iterable, total, desc):
-                self._iterable = iterable
+            def __init__(self, total, desc, unit):
+                self.total = total
+                self.desc = desc
+                self.unit = unit
+                self.updated = 0
+                self.postfix = None
+                self.closed = False
 
-            def __iter__(self):
-                return iter(self._iterable)
+            def update(self, n):
+                self.updated += n
 
-            def set_postfix(self, _):
+            def set_postfix(self, data):
+                self.postfix = data
                 return None
+
+            def close(self):
+                self.closed = True
 
         proposed = [
             np.full(10, 1.0),
@@ -171,14 +180,23 @@ class TestGenerateInitialStates:
             pass
 
         class DummyTqdm:
-            def __init__(self, iterable, total, desc):
-                self._iterable = iterable
+            def __init__(self, total, desc, unit):
+                self.total = total
+                self.desc = desc
+                self.unit = unit
+                self.updated = 0
+                self.postfix = None
+                self.closed = False
 
-            def __iter__(self):
-                return iter(self._iterable)
+            def update(self, n):
+                self.updated += n
 
-            def set_postfix(self, _):
+            def set_postfix(self, data):
+                self.postfix = data
                 return None
+
+            def close(self):
+                self.closed = True
 
         monkeypatch.setattr(mcmc, "FeatureClassifier", DummyClassifier)
         monkeypatch.setattr(mcmc, "tqdm", DummyTqdm)

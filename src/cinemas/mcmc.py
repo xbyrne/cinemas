@@ -40,7 +40,7 @@ def log_posterior(
         log_p[~unphysical_samples] += log_l
 
     else:
-        raise ValueError(
+        raise AssertionError(
             f"`theta` should be either 1D or 2D array; got shape {theta.shape}"
         )
 
