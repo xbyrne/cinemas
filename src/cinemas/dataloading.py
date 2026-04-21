@@ -35,8 +35,7 @@ def is_compact(system_data: pd.DataFrame) -> bool:
     system_data = system_data.sort_values("orbital_period")
     periods = system_data["orbital_period"].values
     period_ratios = periods[1:] / periods[:-1]
-    compact_pairs = np.sum(period_ratios < 2)
-    return compact_pairs >= 2
+    return np.any((period_ratios[:-1] < 2) & (period_ratios[1:] < 2))
 
 
 def get_system_data(star_name: str, catalogue: pd.DataFrame) -> pd.DataFrame:
