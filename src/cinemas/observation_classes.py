@@ -47,7 +47,12 @@ class SystemObservations:
         planet_observations: list[PlanetObservations],
     ):
         self.star_name = star_name
+        if np.isnan(star_mass.mean) or star_mass.mean == 0.0:
+            raise ValueError("Stellar mass observation must have a valid mean value.")
+        if np.isnan(star_mass.error) or star_mass.error == 0.0:
+            raise ValueError("Stellar mass observation must have a valid error value.")
         self.star_mass = star_mass
+
         self.planet_observations = planet_observations
         self.n_planets = len(planet_observations)
 
