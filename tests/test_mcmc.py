@@ -109,7 +109,7 @@ class TestProposeTheta:
 
         assert np.all(minimum_masses > 0.0)
         assert np.all(periods > 0.0)
-        assert np.all((eccentricities >= 0.0) & (eccentricities <= 1e-3))
+        assert np.all((eccentricities >= 0.0) & (eccentricities <= 1.0))
         assert np.all((omegas >= 175.0) & (omegas <= 185.0))
 
 

@@ -58,15 +58,46 @@ def log_gaussian_prior(
     return log_prior
 
 
-def log_uniform_prior(x: float | np.ndarray, x_min: float, x_max: float) -> float:
+def log_uniform_prior(
+    x: float | np.ndarray,
+    x_min: float,
+    x_max: float,
+) -> float | np.ndarray:
     """
     Log prior for a uniform distribution; values outside the range are truncated to -inf
     """
-    log_prior = -np.log(x_max - x_min) * np.ones_like(x)
+    x = np.atleast_1d(x)
+    log_prior = -np.log(x_max - x_min) * np.ones_like(x, dtype=float)
 
     log_prior[(x < x_min) | (x > x_max)] = -np.inf
 
     return log_prior
+
+
+def _log_prior_single_parameter(
+    x: float | np.ndarray,
+    observation: obs.Observation,
+    maximum: float | None = None,
+) -> float | np.ndarray:
+    """
+    Log prior for a single parameter, given an Observation object.
+    This is a helper function that can be used to compute the log prior for any
+    individual parameter, based on its specified distribution and parameters.
+    """
+    if observation.distribution == "gaussian":
+        return log_gaussian_prior(
+            x,
+            observation.mean,
+            observation.error,
+            maximum=maximum,
+        )
+    elif observation.distribution == "uniform":
+        return log_uniform_prior(x, observation.bounds[0], observation.bounds[1])
+
+    else:
+        raise ValueError(
+            f"Unsupported observation distribution: {observation.distribution}"
+        )
 
 
 def log_prior(
@@ -86,27 +117,25 @@ def log_prior(
     # - an array of shape (n_samples,) (if `theta` is 2D).
 
     # Star mass
-    log_p = log_gaussian_prior(
-        star_mass, system_obs.star_mass.mean, system_obs.star_mass.error
-    )
+    log_p = _log_prior_single_parameter(star_mass, system_obs.star_mass)
     # Inclination
     log_p += log_inclination_prior(inclination)
-    # Minimum masses
-    log_p += log_gaussian_prior(
-        minimum_masses, system_obs.minimum_masses, system_obs.minimum_masses_errors
-    ).sum(axis=-1)
-    # Periods
-    log_p += log_gaussian_prior(
-        periods, system_obs.periods, system_obs.periods_errors
-    ).sum(axis=-1)
-    # Eccentricities
-    log_p += log_gaussian_prior(
-        eccentricities,
-        system_obs.eccentricities,
-        system_obs.eccentricities_errors,
-        maximum=np.ones_like(eccentricities),
-    ).sum(axis=-1)
-    # Omegas (uniform between 0 and 360)
-    log_p += log_uniform_prior(omegas, 0, 360).sum(axis=-1)
+
+    # Planetary parameters
+    for i in range(system_obs.n_planets):
+        # Minimum masses
+        log_p += _log_prior_single_parameter(
+            minimum_masses[..., i], system_obs.minimum_masses[i]
+        )
+        # Periods
+        log_p += _log_prior_single_parameter(periods[..., i], system_obs.periods[i])
+        # Eccentricities
+        log_p += _log_prior_single_parameter(
+            eccentricities[..., i],
+            system_obs.eccentricities[i],
+            maximum=1.0,
+        )
+        # Omegas (uniform between 0 and 360)
+        log_p += log_uniform_prior(omegas[..., i], 0, 360)
 
     return log_p

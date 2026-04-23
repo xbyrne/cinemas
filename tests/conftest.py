@@ -42,19 +42,69 @@ def simple_system_observations() -> SystemObservations:
 
     planet_b = PlanetObservations(
         name="b",
-        minimum_mass=Observation(1.0, 0.1),
-        period=Observation(10.0, 0.5),
-        eccentricity=Observation(0.1, 0.02),
+        minimum_mass=Observation(mean=1.0, error=0.1),
+        period=Observation(mean=10.0, error=0.5),
+        eccentricity=Observation(mean=0.1, error=0.02),
     )
     planet_c = PlanetObservations(
         name="c",
-        minimum_mass=Observation(2.0, 0.2),
-        period=Observation(20.0, 1.0),
-        eccentricity=Observation(0.2, 0.04),
+        minimum_mass=Observation(mean=2.0, error=0.2),
+        period=Observation(mean=20.0, error=1.0),
+        eccentricity=Observation(mean=0.2, error=0.04),
     )
 
     return SystemObservations(
         star_name="Star A",
+        star_mass=star_mass,
+        planet_observations=[planet_b, planet_c],
+    )
+
+
+@pytest.fixture
+def mixed_system_observations() -> SystemObservations:
+    """A two-planet system with mixed Gaussian and Uniform prior families."""
+    star_mass = Observation(mean=0.9, error=0.03)
+
+    planet_b = PlanetObservations(
+        name="b",
+        minimum_mass=Observation(distribution="uniform", bounds=(0.5, 1.5)),
+        period=Observation(distribution="uniform", bounds=(8.0, 12.0)),
+        eccentricity=Observation(distribution="uniform", bounds=(0.0, 0.3)),
+    )
+    planet_c = PlanetObservations(
+        name="c",
+        minimum_mass=Observation(mean=2.0, error=0.2),
+        period=Observation(mean=20.0, error=1.0),
+        eccentricity=Observation(mean=0.2, error=0.04),
+    )
+
+    return SystemObservations(
+        star_name="Mixed Star",
+        star_mass=star_mass,
+        planet_observations=[planet_b, planet_c],
+    )
+
+
+@pytest.fixture
+def mixed_uniform_star_mass_system_observations() -> SystemObservations:
+    """A mixed-prior system where star mass prior is also Uniform."""
+    star_mass = Observation(distribution="uniform", bounds=(0.8, 1.2))
+
+    planet_b = PlanetObservations(
+        name="b",
+        minimum_mass=Observation(distribution="uniform", bounds=(0.3, 0.8)),
+        period=Observation(mean=10.0, error=0.5),
+        eccentricity=Observation(distribution="uniform", bounds=(0.0, 0.25)),
+    )
+    planet_c = PlanetObservations(
+        name="c",
+        minimum_mass=Observation(mean=1.6, error=0.15),
+        period=Observation(distribution="uniform", bounds=(18.0, 22.0)),
+        eccentricity=Observation(mean=0.15, error=0.03),
+    )
+
+    return SystemObservations(
+        star_name="Mixed Star (Uniform M*)",
         star_mass=star_mass,
         planet_observations=[planet_b, planet_c],
     )

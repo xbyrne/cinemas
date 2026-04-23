@@ -11,11 +11,35 @@ from . import likelihood
 
 
 class Observation:
-    """An observation with a mean and asymmetric error bars."""
+    """A prior specification for an observed parameter."""
 
-    def __init__(self, mean: float, error: float):
-        self.mean = mean
-        self.error = error
+    def __init__(
+        self,
+        distribution: str = "gaussian",
+        mean: float | None = None,
+        error: float | None = None,
+        bounds: tuple[float, float] | None = None,
+    ):
+        if distribution == "gaussian":
+            if mean is None or error is None:
+                raise ValueError("Gaussian distribution requires mean and error.")
+            if error <= 0:
+                raise ValueError("Error must be positive for Gaussian distribution.")
+            self.mean = mean
+            self.error = error
+
+        elif distribution == "uniform":
+            if bounds is None or len(bounds) != 2:
+                raise ValueError("Uniform distribution requires bounds.")
+            if bounds[1] <= bounds[0]:
+                raise ValueError("Uniform bounds must satisfy x_max > x_min.")
+            self.bounds = bounds
+            self.mean = 0.5 * (bounds[0] + bounds[1])
+
+        else:
+            raise ValueError("Unsupported distribution type.")
+
+        self.distribution = distribution
 
 
 class PlanetObservations:
@@ -47,45 +71,27 @@ class SystemObservations:
         planet_observations: list[PlanetObservations],
     ):
         self.star_name = star_name
-        if np.isnan(star_mass.mean) or star_mass.mean == 0.0:
-            raise ValueError("Stellar mass observation must have a valid mean value.")
-        if np.isnan(star_mass.error) or star_mass.error == 0.0:
-            raise ValueError("Stellar mass observation must have a valid error value.")
         self.star_mass = star_mass
 
         self.planet_observations = planet_observations
         self.n_planets = len(planet_observations)
 
-        self.minimum_masses = np.array(
-            [planet.minimum_mass.mean for planet in planet_observations]
-        )
-        self.periods = np.array([planet.period.mean for planet in planet_observations])
-        self.eccentricities = np.array(
-            [planet.eccentricity.mean for planet in planet_observations]
-        )
-
-        self.minimum_masses_errors = np.array(
-            [planet.minimum_mass.error for planet in planet_observations]
-        )
-        self.periods_errors = np.array(
-            [planet.period.error for planet in planet_observations]
-        )
-        self.eccentricities_errors = np.array(
-            [planet.eccentricity.error for planet in planet_observations]
-        )
+        self.minimum_masses = [planet.minimum_mass for planet in planet_observations]
+        self.periods = [planet.period for planet in planet_observations]
+        self.eccentricities = [planet.eccentricity for planet in planet_observations]
 
     def plot(self, show_eccentricities=False, omegas=None, **kwargs):
         if show_eccentricities:
-            eccentricities = self.eccentricities
+            eccentricities = [eccentricity.mean for eccentricity in self.eccentricities]
         else:
-            eccentricities = np.zeros_like(self.eccentricities)
+            eccentricities = np.zeros(self.n_planets)
         if omegas is None:
             omegas = np.random.uniform(0, 360, size=self.n_planets)
 
         sim = likelihood.create_rebound_simulations(
             star_mass=self.star_mass.mean,
-            masses=self.minimum_masses,
-            periods=self.periods,
+            masses=[minimum_mass_obs.mean for minimum_mass_obs in self.minimum_masses],
+            periods=[period_obs.mean for period_obs in self.periods],
             eccentricities=eccentricities,
             omegas=omegas,
         )

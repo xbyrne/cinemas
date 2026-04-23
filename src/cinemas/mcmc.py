@@ -95,20 +95,28 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
     This is used to generate initial states for the MCMC walkers.
     """
     stellar_mass = np.clip(
-        np.random.normal(system_obs.star_mass.mean, system_obs.star_mass.error / 10),
+        _propose_from_observation(system_obs.star_mass),
         a_min=0.01,
         a_max=None,
     )
     inclination_deg = np.random.uniform(30, 40)
     minimum_masses = np.clip(
-        np.random.normal(
-            system_obs.minimum_masses, system_obs.minimum_masses_errors / 10
+        np.array(
+            [
+                _propose_from_observation(planet.minimum_mass)
+                for planet in system_obs.planet_observations
+            ]
         ),
         a_min=0.01,
         a_max=None,
     )
     periods = np.clip(
-        np.random.normal(system_obs.periods, system_obs.periods_errors / 10),
+        np.array(
+            [
+                _propose_from_observation(planet.period)
+                for planet in system_obs.planet_observations
+            ]
+        ),
         a_min=0.001,
         a_max=None,
     )
@@ -125,6 +133,19 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         )
     )
     return proposed_theta
+
+
+def _propose_from_observation(observation: obs.Observation) -> float:
+    """Draw one random value from an Observation prior."""
+    if observation.distribution == "gaussian":
+        return np.random.normal(observation.mean, observation.error / 10)
+
+    if observation.distribution == "uniform":
+        return np.random.uniform(observation.bounds[0], observation.bounds[1])
+
+    raise ValueError(
+        f"Unsupported observation distribution: {observation.distribution}"
+    )
 
 
 # =========================

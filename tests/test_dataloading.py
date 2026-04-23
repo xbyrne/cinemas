@@ -140,6 +140,6 @@ def test_load_system_observations_builds_system_observations(monkeypatch):
 
     assert system_obs.n_planets == 2
     assert [planet.name for planet in system_obs.planet_observations] == ["b", "c"]
-    assert list(system_obs.minimum_masses) == [1.0, 2.0]
-    assert list(system_obs.periods) == [10.0, 20.0]
-    assert list(system_obs.eccentricities) == [0.1, 0.2]
+    assert [obs.mean for obs in system_obs.minimum_masses] == [1.0, 2.0]
+    assert [obs.mean for obs in system_obs.periods] == [10.0, 20.0]
+    assert [obs.mean for obs in system_obs.eccentricities] == [0.1, 0.2]

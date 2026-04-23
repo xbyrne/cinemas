@@ -6,6 +6,11 @@ Tests for prior probability functions in the CINEMAS package.
 
 import numpy as np
 from cinemas import priors
+from cinemas.observation_classes import (
+    Observation,
+    PlanetObservations,
+    SystemObservations,
+)
 from pytest import approx
 
 
@@ -72,6 +77,13 @@ class TestUniformPrior:
         assert log_p[2] == approx(-np.log(360.0))
         assert log_p[3] == -np.inf
 
+    def test_log_uniform_prior_scalar_input(self):
+        """Uniform prior should support scalar inputs without indexing errors."""
+        log_p = priors.log_uniform_prior(10.0, x_min=0.0, x_max=360.0)
+
+        assert np.shape(log_p) == (1,)
+        assert log_p[0] == approx(-np.log(360.0))
+
 
 class TestFullPrior:
     """Tests for the full prior over theta."""
@@ -125,6 +137,162 @@ class TestFullPrior:
                 10.0,
                 20.0,
                 0.1,
+                0.2,
+                180.0,
+                200.0,
+            ]
+        )
+
+        log_p = priors.log_prior(theta, simple_system_observations)
+
+        assert log_p[0] == -np.inf
+
+    def test_log_prior_accepts_uniform_planet_priors(self):
+        """Uniform priors in SystemObservations should be consumed by log_prior."""
+        system_obs = SystemObservations(
+            star_name="Star U",
+            star_mass=Observation(mean=1.0, error=0.05),
+            planet_observations=[
+                PlanetObservations(
+                    name="b",
+                    minimum_mass=Observation(distribution="uniform", bounds=(0.5, 1.5)),
+                    period=Observation(distribution="uniform", bounds=(9.0, 11.0)),
+                    eccentricity=Observation(distribution="uniform", bounds=(0.0, 0.3)),
+                ),
+                PlanetObservations(
+                    name="c",
+                    minimum_mass=Observation(mean=2.0, error=0.2),
+                    period=Observation(mean=20.0, error=1.0),
+                    eccentricity=Observation(mean=0.2, error=0.04),
+                ),
+            ],
+        )
+
+        theta_in = np.array(
+            [
+                1.0,
+                45.0,
+                1.0,
+                2.0,
+                10.0,
+                20.0,
+                0.1,
+                0.2,
+                180.0,
+                200.0,
+            ]
+        )
+        theta_out = theta_in.copy()
+        theta_out[2] = 2.0
+
+        assert np.isfinite(priors.log_prior(theta_in, system_obs)[0])
+        assert priors.log_prior(theta_out, system_obs)[0] == -np.inf
+
+    def test_log_prior_mixed_fixture_in_range(self, mixed_system_observations):
+        """Mixed gaussian/uniform fixture should give finite prior in range."""
+        theta = np.array(
+            [
+                0.9,
+                40.0,
+                1.0,
+                2.0,
+                10.0,
+                20.0,
+                0.15,
+                0.2,
+                120.0,
+                240.0,
+            ]
+        )
+
+        log_p = priors.log_prior(theta, mixed_system_observations)
+
+        assert np.shape(log_p) == (1,)
+        assert np.isfinite(log_p[0])
+
+    def test_log_prior_mixed_fixture_rejects_uniform_period_out_of_range(
+        self,
+        mixed_system_observations,
+    ):
+        """Uniform bounds on period for planet b should be enforced."""
+        theta = np.array(
+            [
+                0.9,
+                40.0,
+                1.0,
+                2.0,
+                12.5,
+                20.0,
+                0.15,
+                0.2,
+                120.0,
+                240.0,
+            ]
+        )
+
+        log_p = priors.log_prior(theta, mixed_system_observations)
+
+        assert log_p[0] == -np.inf
+
+    def test_log_prior_mixed_fixture_rejects_uniform_star_mass_out_of_range(
+        self,
+        mixed_uniform_star_mass_system_observations,
+    ):
+        """Uniform bounds on stellar mass should be enforced."""
+        theta = np.array(
+            [
+                1.3,
+                40.0,
+                0.5,
+                1.6,
+                10.0,
+                20.0,
+                0.1,
+                0.15,
+                100.0,
+                200.0,
+            ]
+        )
+
+        log_p = priors.log_prior(theta, mixed_uniform_star_mass_system_observations)
+
+        assert log_p[0] == -np.inf
+
+    def test_log_prior_mixed_fixture_batch_rejects_only_invalid_rows(
+        self,
+        mixed_system_observations,
+    ):
+        """2D theta should preserve row-wise finite/-inf behavior."""
+        theta = np.array(
+            [
+                [0.9, 40.0, 1.0, 2.0, 10.0, 20.0, 0.10, 0.2, 100.0, 200.0],
+                [0.9, 40.0, 2.0, 2.0, 10.0, 20.0, 0.10, 0.2, 100.0, 200.0],
+                [0.9, 40.0, 1.0, 2.0, 10.0, 20.0, 0.10, 0.2, 100.0, 200.0],
+            ]
+        )
+        theta[2, 0] = 0.7  # Still finite under Gaussian star-mass prior.
+
+        log_p = priors.log_prior(theta, mixed_system_observations)
+
+        assert log_p.shape == (3,)
+        assert np.isfinite(log_p[0])
+        assert log_p[1] == -np.inf
+        assert np.isfinite(log_p[2])
+
+    def test_log_prior_rejects_eccentricity_above_one(
+        self,
+        simple_system_observations,
+    ):
+        """Eccentricity terms should be truncated above 1.0."""
+        theta = np.array(
+            [
+                1.0,
+                45.0,
+                1.0,
+                2.0,
+                10.0,
+                20.0,
+                1.1,
                 0.2,
                 180.0,
                 200.0,

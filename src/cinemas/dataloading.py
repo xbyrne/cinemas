@@ -84,7 +84,9 @@ def load_system_observations(
         system_data["star_mass_error_min"].iloc[0]
         + system_data["star_mass_error_max"].iloc[0]
     )
-    star_mass_obs = obs.Observation(mean=star_mass_mean, error=star_mass_error)
+    star_mass_obs = obs.Observation(
+        distribution="gaussian", mean=star_mass_mean, error=star_mass_error
+    )
 
     system_obs = obs.SystemObservations(
         star_name=star_name,
@@ -102,16 +104,24 @@ def package_planet_observations(planet_data_row: pd.Series) -> obs.PlanetObserva
     # Handle missing eccentricity
     eccentricity = planet_data_row["eccentricity"]
     if pd.isna(eccentricity) or eccentricity == 0.0:
-        eccentricity_obs = obs.Observation(mean=0.05, error=0.05)
+        eccentricity_obs = obs.Observation(
+            distribution="gaussian",
+            mean=0.05,
+            error=0.05,
+        )
     else:
         eccentricity_error = get_average_param_error(planet_data_row, "eccentricity")
-        eccentricity_obs = obs.Observation(mean=eccentricity, error=eccentricity_error)
+        eccentricity_obs = obs.Observation(
+            distribution="gaussian", mean=eccentricity, error=eccentricity_error
+        )
 
     minimum_mass_obs = obs.Observation(
+        distribution="gaussian",
         mean=planet_data_row["mass_sini"],
         error=get_average_param_error(planet_data_row, "mass_sini"),
     )
     period_obs = obs.Observation(
+        distribution="gaussian",
         mean=planet_data_row["orbital_period"],
         error=get_average_param_error(planet_data_row, "orbital_period"),
     )
