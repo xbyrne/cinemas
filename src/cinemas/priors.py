@@ -123,6 +123,10 @@ def log_prior(
 
     # Planetary parameters
     for i in range(system_obs.n_planets):
+        # First of all, check true mass is smaller than the star mass
+        true_mass = minimum_masses[..., i] / np.sin(np.radians(inclination))
+        log_p += log_uniform_prior(true_mass, 0, star_mass * constants.MSUN_MEARTH)
+
         # Minimum masses
         log_p += _log_prior_single_parameter(
             minimum_masses[..., i], system_obs.minimum_masses[i]
