@@ -120,7 +120,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         a_min=0.001,
         a_max=None,
     )
-    eccentricities = np.random.uniform(0, 1e-3, size=system_obs.n_planets)
+    eccentricities = np.random.uniform(0, 1e-2, size=system_obs.n_planets)
     omegas = np.random.uniform(175, 185, size=system_obs.n_planets)
 
     proposed_theta = np.concatenate(
