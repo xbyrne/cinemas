@@ -16,7 +16,8 @@ def test_import_constants():
     """Test that the constants can be imported."""
     from cinemas import constants
 
-    assert constants.FIELDS_TO_USE
+    assert constants.ALL_FIELDS
+    assert constants.DEFAULT_DOWNLOAD_PATH
 
     assert constants.MJUP_MEARTH
     assert constants.MSUN_MEARTH
@@ -36,7 +37,12 @@ def test_import_observation_classes():
 
 def test_import_main_functions():
     """Test that the main functions can be imported."""
-    from cinemas import load_system_observations, run_mcmc_sampling
+    from cinemas import (
+        download_multiplanet_systems,
+        load_system_observations,
+        run_mcmc_sampling,
+    )
 
+    assert callable(download_multiplanet_systems)
     assert callable(load_system_observations)
     assert callable(run_mcmc_sampling)

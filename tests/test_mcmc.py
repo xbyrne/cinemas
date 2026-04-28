@@ -315,3 +315,32 @@ class TestRunMCMCSampling:
         assert samples.shape == (3, 20, 10)
         assert tau == -1.0
         assert acceptance_fraction.shape == (20,)
+
+    def test_log_posterior_raises_on_bad_theta_dim(self, simple_system_observations):
+        """3D theta should raise AssertionError."""
+        theta = np.zeros((2, 2, 2))
+
+        with pytest.raises(AssertionError):
+            mcmc.log_posterior(theta, simple_system_observations)
+
+    def test_log_posterior_handles_unphysical_samples(
+        self, monkeypatch, simple_system_observations
+    ):
+        """2D theta with one unphysical sample should skip likelihood for it."""
+        n_planets = simple_system_observations.n_planets
+        n_params = 2 + 4 * n_planets
+        theta = np.zeros((2, n_params))
+
+        # Monkeypatch priors.log_prior to return one -inf and one finite value
+        monkeypatch.setattr("cinemas.priors.log_prior", lambda th, so: np.array([-np.inf, 0.0]))
+
+        # Monkeypatch likelihood.log_likelihood to be called for the single finite sample
+        monkeypatch.setattr(
+            "cinemas.likelihood.log_likelihood", lambda th, sp: np.array([0.123])
+        )
+
+        out = mcmc.log_posterior(theta, simple_system_observations)
+
+        assert out.shape == (2,)
+        assert out[0] == -np.inf
+        assert out[1] == pytest.approx(0.123)

@@ -36,12 +36,13 @@ pip install -e ".[dev]"
 
 ### Loading observational data
 
+Observational data is loaded from the [NASA Exoplanet Archive](https://exoplanetarchive.ipac.caltech.edu/index.html), using their [TAP service](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html). It is then loaded into a `SystemObservations` object, which includes all the observational data needed for a prior on the configuration parameters.
+
 ```python
-import pandas as pd
 import cinemas
 
 # Load observational constraints for a system
-catalogue = pd.read_csv("exoplanet.eu_catalog.csv")  # https://exoplanet.eu/catalog/
+catalogue = cinemas.download_multiplanet_systems()
 system_obs = cinemas.load_system_observations(
     star_name="Barnard's star",
     exoplanet_catalogue=catalogue

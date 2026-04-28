@@ -302,3 +302,14 @@ class TestFullPrior:
         log_p = priors.log_prior(theta, simple_system_observations)
 
         assert log_p[0] == -np.inf
+
+    def test_log_inclination_prior_vector_handles_out_of_range(self):
+        """Vector inputs with out-of-range values should be set to -inf."""
+        vals = np.array([0.0, 45.0, 200.0])
+        lp = priors.log_inclination_prior(vals)
+
+        assert lp.shape == (3,)
+        assert lp[0] == -np.inf
+        assert lp[2] == -np.inf
+        # middle value should be finite and match expected log(sin(i)) behaviour
+        assert lp[1] == approx(np.log(np.sin(np.radians(45.0))))

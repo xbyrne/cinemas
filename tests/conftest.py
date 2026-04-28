@@ -7,7 +7,6 @@ Fixtures for testing the CINEMAS package.
 import pandas as pd
 import pytest
 
-from cinemas import constants
 from cinemas.observation_classes import (
     Observation,
     PlanetObservations,
@@ -119,16 +118,16 @@ def example_planet_data_row() -> pd.Series:
     """A single row of planet data, as a pandas Series."""
     return pd.Series(
         {
-            "name": "Raxacoricofallapatorius",
-            "mass_sini": 1.0,
-            "mass_sini_error_min": 0.1,
-            "mass_sini_error_max": 0.2,
-            "orbital_period": 10.0,
-            "orbital_period_error_min": 0.5,
-            "orbital_period_error_max": 1.0,
-            "eccentricity": 0.1,
-            "eccentricity_error_min": 0.02,
-            "eccentricity_error_max": 0.04,
+            "pl_name": "Raxacoricofallapatorius",
+            "pl_msinie": 1.0,
+            "pl_msinieerr1": 0.1,
+            "pl_msinieerr2": -0.2,
+            "pl_orbper": 10.0,
+            "pl_orbpererr1": 0.5,
+            "pl_orbpererr2": -1.0,
+            "pl_orbeccen": 0.1,
+            "pl_orbeccenerr1": 0.02,
+            "pl_orbeccenerr2": -0.04,
         }
     )
 
@@ -138,16 +137,16 @@ def example_planet_data_row_without_eccentricity() -> pd.Series:
     """A single row of planet data without eccentricity, as a pandas Series."""
     return pd.Series(
         {
-            "name": "Raxacoricovarlonpatorius",
-            "mass_sini": 1.0,
-            "mass_sini_error_min": 0.1,
-            "mass_sini_error_max": 0.2,
-            "orbital_period": 10.0,
-            "orbital_period_error_min": 0.5,
-            "orbital_period_error_max": 1.0,
-            "eccentricity": None,
-            "eccentricity_error_min": None,
-            "eccentricity_error_max": None,
+            "pl_name": "Raxacoricovarlonpatorius",
+            "pl_msinie": 1.0,
+            "pl_msinieerr1": 0.1,
+            "pl_msinieerr2": -0.2,
+            "pl_orbper": 10.0,
+            "pl_orbpererr1": 0.5,
+            "pl_orbpererr2": -1.0,
+            "pl_orbeccen": None,
+            "pl_orbeccenerr1": None,
+            "pl_orbeccenerr2": None,
         }
     )
 
@@ -157,22 +156,26 @@ def example_system_data_compact() -> pd.DataFrame:
     """A minimal DataFrame representing a compact multiplanet system."""
     return pd.DataFrame(
         {
-            "name": ["Planet b", "Planet c", "Planet d"],
-            "star_mass": [1.0, 1.0, 1.0],
-            "star_mass_error_min": [0.05, 0.05, 0.05],
-            "star_mass_error_max": [0.05, 0.05, 0.05],
-            "mass_sini": [1.0, 2.0, 3.0],
-            "mass_sini_error_min": [0.1, 0.2, 0.3],
-            "mass_sini_error_max": [0.1, 0.2, 0.3],
-            "orbital_period": [10.0, 25.0, 15.0],
+            "pl_name": ["Planet b", "Planet c", "Planet d"],
+            "st_mass": [1.0, 1.0, 1.0],
+            "st_masserr1": [0.05, 0.05, 0.05],
+            "st_masserr2": [-0.05, -0.05, -0.05],
+            "pl_msinie": [1.0, 2.0, 3.0],
+            "pl_msinieerr1": [0.1, 0.2, 0.3],
+            "pl_msinieerr2": [-0.1, -0.2, -0.3],
+            "pl_orbper": [10.0, 25.0, 15.0],
             # ^ NB: Intentionally out of order to test sorting
-            "orbital_period_error_min": [0.5, 1.0, 0.5],
-            "orbital_period_error_max": [0.5, 1.0, 0.5],
-            "eccentricity": [0.1, 0.2, 0.3],
-            "eccentricity_error_min": [0.02, 0.04, 0.06],
-            "eccentricity_error_max": [0.02, 0.04, 0.06],
-            "detection_type": ["Radial Velocity", "Radial Velocity", "Radial Velocity"],
-            "star_name": ["Star A", "Star A", "Star A"],
+            "pl_orbpererr1": [0.5, 1.0, 0.5],
+            "pl_orbpererr2": [-0.5, -1.0, -0.5],
+            "pl_orbeccen": [0.1, 0.2, 0.3],
+            "pl_orbeccenerr1": [0.02, 0.04, 0.06],
+            "pl_orbeccenerr2": [-0.02, -0.04, -0.06],
+            "discoverymethod": [
+                "Radial Velocity",
+                "Radial Velocity",
+                "Radial Velocity",
+            ],
+            "hostname": ["Star A", "Star A", "Star A"],
         }
     )
 
@@ -184,11 +187,11 @@ def example_system_data_non_compact(example_system_data_compact) -> pd.DataFrame
     non_compact_data = example_system_data_compact.copy()
 
     # Modify the orbital periods to make it non-compact
-    non_compact_data["orbital_period"] = [50.0, 15.0, 10.0]
+    non_compact_data["pl_orbper"] = [50.0, 15.0, 10.0]
     # (again, intentionally out of order to test sorting)
 
     # Modify also the star name
-    non_compact_data["star_name"] = ["Star B", "Star B", "Star B"]
+    non_compact_data["hostname"] = ["Star B", "Star B", "Star B"]
 
     return non_compact_data
 
@@ -206,25 +209,3 @@ def example_exoplanet_catalogue(
         [example_system_data_compact, example_system_data_non_compact],
         ignore_index=True,
     )
-
-
-@pytest.fixture
-def example_catalogue_for_system_data() -> pd.DataFrame:
-    """A minimal catalogue row with all required fields for get_system_data tests."""
-    row = {
-        "star_name": "Star A",
-        "name": "Planet b",
-        "planet_status": "Confirmed",
-    }
-
-    for field in constants.FIELDS_TO_USE:
-        row[field] = 1.0
-        row[f"{field}_error_min"] = 0.1
-        row[f"{field}_error_max"] = 0.2
-
-    # Keep stellar mass values distinct to check they are not mass-converted.
-    row["star_mass"] = 1.2
-    row["star_mass_error_min"] = 0.05
-    row["star_mass_error_max"] = 0.07
-
-    return pd.DataFrame([row])
