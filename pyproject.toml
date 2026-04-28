@@ -27,6 +27,7 @@ dependencies = [
     "emcee>=3.0",
     "rebound>=3.0",
     "spock>=1.0",
+    "pyvo>=1.0",
 ]
 
 [project.urls]
