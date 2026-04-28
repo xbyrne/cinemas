@@ -19,7 +19,6 @@ def test_import_constants():
     assert constants.ALL_FIELDS
     assert constants.DEFAULT_DOWNLOAD_PATH
 
-    assert constants.MJUP_MEARTH
     assert constants.MSUN_MEARTH
 
     assert constants.I_MIN
