@@ -7,7 +7,7 @@ A Bayesian framework for constraining orbital parameters of exoplanets in
 multi-planet systems using dynamical stability as a constraint.
 """
 
-__version__ = "0.3.0.dev0"
+__version__ = "0.4.0.dev0"
 
 from .dataloading import (
     download_multiplanet_systems,
