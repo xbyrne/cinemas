@@ -92,8 +92,8 @@ class TestFullPrior:
         """A physically plausible theta should yield finite total log prior."""
         theta = np.array(
             [
-                1.0,
                 45.0,
+                1.0,
                 1.0,
                 2.0,
                 10.0,
@@ -116,8 +116,8 @@ class TestFullPrior:
         """2D theta input should return one log-prior value per sample."""
         theta = np.array(
             [
-                [1.0, 45.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
-                [1.1, 50.0, 1.2, 2.1, 10.1, 19.9, 0.15, 0.25, 100.0, 250.0],
+                [45.0, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
+                [50.0, 1.1, 1.2, 2.1, 10.1, 19.9, 0.15, 0.25, 100.0, 250.0],
             ]
         )
 
@@ -130,8 +130,8 @@ class TestFullPrior:
         """Out-of-range inclination should produce -inf prior."""
         theta = np.array(
             [
-                1.0,
                 0.01,
+                1.0,
                 1.0,
                 2.0,
                 10.0,
@@ -170,8 +170,8 @@ class TestFullPrior:
 
         theta_in = np.array(
             [
-                1.0,
                 45.0,
+                1.0,
                 1.0,
                 2.0,
                 10.0,
@@ -192,8 +192,8 @@ class TestFullPrior:
         """Mixed gaussian/uniform fixture should give finite prior in range."""
         theta = np.array(
             [
-                0.9,
                 40.0,
+                0.9,
                 1.0,
                 2.0,
                 10.0,
@@ -217,8 +217,8 @@ class TestFullPrior:
         """Uniform bounds on period for planet b should be enforced."""
         theta = np.array(
             [
-                0.9,
                 40.0,
+                0.9,
                 1.0,
                 2.0,
                 12.5,
@@ -241,8 +241,8 @@ class TestFullPrior:
         """Uniform bounds on stellar mass should be enforced."""
         theta = np.array(
             [
-                1.3,
                 40.0,
+                1.3,
                 0.5,
                 1.6,
                 10.0,

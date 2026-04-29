@@ -89,7 +89,7 @@ def unpack_theta(theta: np.ndarray):
     """
     Unpack the parameter vector `theta` into its components.
     `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
-    where n_parameters = 2 + 4 * n_planets (star mass, inclination, minimum masses,
+    where n_parameters = 2 + 4 * n_planets (inclination, star mass, minimum masses,
     periods, eccentricities, omegas).
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
@@ -99,8 +99,8 @@ def unpack_theta(theta: np.ndarray):
     ) % 4 == 0, "`theta` should have 2 + 4 * n_planets parameters"
     n_planets = (theta.shape[-1] - 2) // 4
 
-    star_mass = theta[..., 0]
-    inclination = theta[..., 1]
+    inclination = theta[..., 0]
+    star_mass = theta[..., 1]
     minimum_masses = theta[..., 2 : 2 + n_planets]
     periods = theta[..., 2 + n_planets : 2 + 2 * n_planets]
     eccentricities = theta[..., 2 + 2 * n_planets : 2 + 3 * n_planets]

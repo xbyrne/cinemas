@@ -17,8 +17,8 @@ class TestUnpackTheta:
         """Test unpacking a single theta vector."""
         theta = np.array(
             [
-                1.0,  # star_mass
                 30.0,  # inclination
+                1.0,  # star_mass
                 2.0,  # minimum masses
                 4.0,
                 10.0,  # periods
@@ -45,8 +45,8 @@ class TestUnpackTheta:
         """Test unpacking multiple theta vectors."""
         theta = np.array(
             [
-                [1.0, 30.0, 2.0, 10.0, 0.1, 0.2],
-                [1.1, 60.0, 3.0, 20.0, 0.2, 0.3],
+                [30.0, 1.0, 2.0, 10.0, 0.1, 0.2],
+                [60.0, 1.1, 3.0, 20.0, 0.2, 0.3],
             ]
         )
 
@@ -70,7 +70,7 @@ class TestUnpackTheta:
 
     def test_unpack_theta_raises_for_invalid_parameter_count(self):
         """Test that unpack_theta rejects arrays that cannot encode full planets."""
-        theta = np.array([1.0, 30.0, 2.0])
+        theta = np.array([30.0, 1.0, 2.0])
 
         with pytest.raises(AssertionError, match=r"2 \+ 4 \* n_planets"):
             likelihood.unpack_theta(theta)
@@ -158,7 +158,7 @@ class TestCreateReboundSimulationsFromTheta:
             likelihood, "create_rebound_simulations", fake_create_rebound_simulations
         )
 
-        theta = np.array([1.0, 30.0, 5.0, 10.0, 0.1, 0.2])
+        theta = np.array([30.0, 1.0, 5.0, 10.0, 0.1, 0.2])
         result = likelihood.create_rebound_simulations_from_theta(theta)
 
         assert result == "fake-simulation"
@@ -194,8 +194,8 @@ class TestCreateReboundSimulationsFromTheta:
 
         theta = np.array(
             [
-                [1.0, 30.0, 5.0, 10.0, 0.1, 0.2],
-                [1.1, 60.0, 6.0, 12.0, 0.2, 0.3],
+                [30.0, 1.0, 5.0, 10.0, 0.1, 0.2],
+                [60.0, 1.1, 6.0, 12.0, 0.2, 0.3],
             ]
         )
 
@@ -231,7 +231,7 @@ class TestLogLikelihood:
         )
 
         log_prob = likelihood.log_likelihood(
-            theta=np.array([[1.0, 30.0, 5.0, 10.0, 0.1, 0.2]]),
+            theta=np.array([[30.0, 1.0, 5.0, 10.0, 0.1, 0.2]]),
             spock_classifier=DummyClassifier(),
         )
 
@@ -253,7 +253,7 @@ class TestLogLikelihood:
         monkeypatch.setattr(likelihood, "FeatureClassifier", DummyClassifier)
 
         log_prob = likelihood.log_likelihood(
-            theta=np.array([1.0, 30.0, 5.0, 10.0, 0.1, 0.2])
+            theta=np.array([30.0, 1.0, 5.0, 10.0, 0.1, 0.2])
         )
         stdout = capsys.readouterr().out
 

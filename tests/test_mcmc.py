@@ -28,7 +28,7 @@ class TestLogPosterior:
         monkeypatch.setattr(mcmc.priors, "log_prior", fake_log_prior)
         monkeypatch.setattr(mcmc.likelihood, "log_likelihood", fake_log_likelihood)
 
-        theta = np.array([1.0, 45.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0])
+        theta = np.array([45.0, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0])
         log_post = mcmc.log_posterior(theta, simple_system_observations)
 
         assert log_post == -np.inf
@@ -44,7 +44,7 @@ class TestLogPosterior:
             lambda theta, spock_classifier: -3.5,
         )
 
-        theta = np.array([1.0, 45.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0])
+        theta = np.array([45.0, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0])
         log_post = mcmc.log_posterior(theta, simple_system_observations)
 
         assert log_post == approx(-5.5)
@@ -67,9 +67,9 @@ class TestLogPosterior:
 
         theta = np.array(
             [
-                [1.0, 45.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
-                [1.0, 0.01, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
-                [1.2, 50.0, 1.1, 2.1, 9.0, 19.0, 0.12, 0.22, 170.0, 210.0],
+                [45.0, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
+                [0.01, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
+                [50.0, 1.2, 1.1, 2.1, 9.0, 19.0, 0.12, 0.22, 170.0, 210.0],
             ]
         )
 
@@ -99,8 +99,8 @@ class TestProposeTheta:
         n_parameters = 2 + 4 * n_planets
 
         assert theta.shape == (n_parameters,)
-        assert theta[0] > 0.0
-        assert 30.0 <= theta[1] <= 40.0
+        assert 30.0 <= theta[0] <= 40.0
+        assert theta[1] > 0.0
 
         minimum_masses = theta[2 : 2 + n_planets]
         periods = theta[2 + n_planets : 2 + 2 * n_planets]
