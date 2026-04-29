@@ -60,6 +60,7 @@ def select_compact_multiplanet_rv_systems(
         lambda x: (x["discoverymethod"] == "Radial Velocity").all()
         & (len(x) > 2)
         & is_compact(x)
+        & (x["pl_controv_flag"] == 0).all()
     )
 
     return compact_multiplanet_rv_systems

@@ -170,6 +170,7 @@ def example_system_data_compact() -> pd.DataFrame:
             "pl_orbeccen": [0.1, 0.2, 0.3],
             "pl_orbeccenerr1": [0.02, 0.04, 0.06],
             "pl_orbeccenerr2": [-0.02, -0.04, -0.06],
+            "pl_controv_flag": [0, 0, 0],
             "discoverymethod": [
                 "Radial Velocity",
                 "Radial Velocity",
