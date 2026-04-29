@@ -25,6 +25,7 @@ dependencies = [
     "pandas>=1.0",
     "tqdm>=4.50",
     "emcee>=3.0",
+    "h5py>=3.0",
     "rebound>=3.0",
     "spock>=1.0",
     "pyvo>=1.0",

@@ -227,12 +227,13 @@ class TestRunMCMCSampling:
             pass
 
         class DummySampler:
-            def __init__(self, nwalkers, ndim, log_prob_fn, args, vectorize):
+            def __init__(self, nwalkers, ndim, log_prob_fn, args, backend, vectorize):
                 captured["nwalkers"] = nwalkers
                 captured["ndim"] = ndim
                 captured["vectorize"] = vectorize
                 captured["args"] = args
                 captured["log_prob_fn"] = log_prob_fn
+                captured["backend"] = backend
                 self.acceptance_fraction = np.array([0.2, 0.4])
 
             def run_mcmc(self, initial_states, nsteps, progress):
@@ -262,6 +263,7 @@ class TestRunMCMCSampling:
         assert captured["vectorize"] is True
         assert captured["log_prob_fn"] is mcmc.log_posterior
         assert isinstance(captured["args"][1], DummyClassifier)
+        assert captured["backend"] is None
         assert np.array_equal(captured["initial_states"], initial_states)
         assert captured["nsteps"] == 5
         assert captured["progress"] is True
@@ -282,7 +284,7 @@ class TestRunMCMCSampling:
             pass
 
         class DummySampler:
-            def __init__(self, nwalkers, ndim, log_prob_fn, args, vectorize):
+            def __init__(self, nwalkers, ndim, log_prob_fn, args, backend, vectorize):
                 self.acceptance_fraction = np.array([0.5] * nwalkers)
 
             def run_mcmc(self, initial_states, nsteps, progress):
@@ -316,6 +318,118 @@ class TestRunMCMCSampling:
         assert tau == -1.0
         assert acceptance_fraction.shape == (20,)
 
+    def test_run_mcmc_sampling_creates_and_resets_hdf_backend(
+        self, simple_system_observations, monkeypatch
+    ):
+        """
+        A backend_path should create a checkpoint backend and reset it for a fresh run.
+        """
+        captured = {}
+
+        class DummyClassifier:
+            pass
+
+        class DummyBackend:
+            def __init__(self):
+                self.reset_calls = []
+
+            def reset(self, nwalkers, ndim):
+                self.reset_calls.append((nwalkers, ndim))
+
+        class DummySampler:
+            def __init__(self, nwalkers, ndim, log_prob_fn, args, backend, vectorize):
+                captured["backend"] = backend
+                captured["ndim"] = ndim
+                self.acceptance_fraction = np.array([0.3, 0.7])
+
+            def run_mcmc(self, initial_states, nsteps, progress):
+                captured["progress"] = progress
+
+            def get_chain(self):
+                return np.ones((4, 2, 10))
+
+            def get_autocorr_time(self):
+                return np.array([9.0, 11.0])
+
+        backend = DummyBackend()
+        monkeypatch.setattr(mcmc, "FeatureClassifier", DummyClassifier)
+        monkeypatch.setattr(mcmc, "EnsembleSampler", DummySampler)
+        monkeypatch.setattr(
+            mcmc,
+            "_create_hdf_backend",
+            lambda backend_path, backend_name="mcmc": backend,
+        )
+
+        samples, tau, acceptance_fraction = mcmc.run_mcmc_sampling(
+            simple_system_observations,
+            nwalkers=2,
+            nsteps=4,
+            initial_states=np.ones((2, 10)),
+            backend_path="/tmp/cinemas_checkpoint.h5",
+        )
+
+        assert captured["backend"] is backend
+        assert backend.reset_calls == [(2, 10)]
+        assert captured["ndim"] == 10
+        assert captured["progress"] is True
+        assert samples.shape == (4, 2, 10)
+        assert np.allclose(tau, [9.0, 11.0])
+        assert np.allclose(acceptance_fraction, [0.3, 0.7])
+
+    def test_run_mcmc_sampling_can_resume_without_resetting_backend(
+        self, simple_system_observations, monkeypatch
+    ):
+        """Resume mode should reuse an existing backend without clearing it."""
+        captured = {}
+
+        class DummyClassifier:
+            pass
+
+        class DummyBackend:
+            def __init__(self):
+                self.reset_calls = []
+
+            def reset(self, nwalkers, ndim):
+                self.reset_calls.append((nwalkers, ndim))
+
+        class DummySampler:
+            def __init__(self, nwalkers, ndim, log_prob_fn, args, backend, vectorize):
+                captured["backend"] = backend
+                self.acceptance_fraction = np.array([0.4, 0.6])
+
+            def run_mcmc(self, initial_states, nsteps, progress):
+                captured["initial_states"] = initial_states
+
+            def get_chain(self):
+                return np.full((2, 2, 10), 5.0)
+
+            def get_autocorr_time(self):
+                return np.array([7.0, 8.0])
+
+        backend = DummyBackend()
+        monkeypatch.setattr(mcmc, "FeatureClassifier", DummyClassifier)
+        monkeypatch.setattr(mcmc, "EnsembleSampler", DummySampler)
+        monkeypatch.setattr(
+            mcmc,
+            "_create_hdf_backend",
+            lambda backend_path, backend_name="mcmc": backend,
+        )
+
+        samples, tau, acceptance_fraction = mcmc.run_mcmc_sampling(
+            simple_system_observations,
+            nwalkers=2,
+            nsteps=2,
+            initial_states=np.ones((2, 10)),
+            backend_path="/tmp/cinemas_checkpoint.h5",
+            resume=True,
+        )
+
+        assert captured["backend"] is backend
+        assert backend.reset_calls == []
+        assert np.allclose(samples, 5.0)
+        assert np.allclose(tau, [7.0, 8.0])
+        assert np.allclose(acceptance_fraction, [0.4, 0.6])
+
     def test_log_posterior_raises_on_bad_theta_dim(self, simple_system_observations):
         """3D theta should raise AssertionError."""
         theta = np.zeros((2, 2, 2))
@@ -332,9 +446,11 @@ class TestRunMCMCSampling:
         theta = np.zeros((2, n_params))
 
         # Monkeypatch priors.log_prior to return one -inf and one finite value
-        monkeypatch.setattr("cinemas.priors.log_prior", lambda th, so: np.array([-np.inf, 0.0]))
+        monkeypatch.setattr(
+            "cinemas.priors.log_prior", lambda th, so: np.array([-np.inf, 0.0])
+        )
 
-        # Monkeypatch likelihood.log_likelihood to be called for the single finite sample
+        # Monkeypatch likelihood.log_likelihood to be called for single finite sample
         monkeypatch.setattr(
             "cinemas.likelihood.log_likelihood", lambda th, sp: np.array([0.123])
         )

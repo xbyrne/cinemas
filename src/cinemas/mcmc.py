@@ -6,6 +6,7 @@ Functions for running MCMC sampling for the CINEMAS package, using the emcee lib
 
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
+from emcee.backends import HDFBackend
 import numpy as np
 from spock import FeatureClassifier
 from tqdm import tqdm
@@ -148,6 +149,10 @@ def _propose_from_observation(observation: obs.Observation) -> float:
     )
 
 
+def _create_hdf_backend(backend_path: str, backend_name: str = "mcmc") -> HDFBackend:
+    return HDFBackend(backend_path, name=backend_name)
+
+
 # =========================
 
 
@@ -156,10 +161,18 @@ def run_mcmc_sampling(
     nwalkers: int = None,
     nsteps: int = 1000,
     initial_states: np.ndarray = None,
+    backend: HDFBackend = None,
+    backend_path: str = None,
+    backend_name: str = "mcmc",
+    resume: bool = False,
 ) -> tuple[np.ndarray, float, float]:
     """
     Run MCMC sampling to obtain posterior samples for the system parameters.
     If given, `initial_states` should be an array of shape (nwalkers, n_parameters).
+    If `backend_path` is provided, the sampler will use an HDFBackend to save the
+    chain to disk at the specified path. If `resume` is True, it will attempt to resume
+    from the existing chain at that path (if it exists); otherwise, it will start a new
+    chain and overwrite any existing file at that path.
     """
 
     n_planets = system_obs.n_planets
@@ -175,11 +188,20 @@ def run_mcmc_sampling(
 
     spock_classifier = FeatureClassifier()
 
+    if backend is not None and backend_path is not None:
+        raise ValueError("Pass either `backend` or `backend_path`, not both.")
+
+    if backend_path is not None:
+        backend = _create_hdf_backend(backend_path, backend_name=backend_name)
+        if not resume:
+            backend.reset(nwalkers, 2 + 4 * system_obs.n_planets)
+
     sampler = EnsembleSampler(
         nwalkers=nwalkers,
         ndim=2 + 4 * system_obs.n_planets,
         log_prob_fn=log_posterior,
         args=[system_obs, spock_classifier],
+        backend=backend,
         vectorize=True,
     )
     sampler.run_mcmc(initial_states, nsteps, progress=True)
