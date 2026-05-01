@@ -16,14 +16,11 @@ def log_inclination_prior(
     """
     Log prior for the inclination of a planet, assuming isotropic orientations.
     """
+    inclination_deg = np.atleast_1d(inclination_deg)
 
     log_prior = np.log(np.sin(np.radians(np.clip(inclination_deg, i_min, i_max))))
 
-    if log_prior.ndim == 0:
-        if inclination_deg < i_min or inclination_deg > i_max:
-            log_prior = -np.inf
-    else:
-        log_prior[(inclination_deg < i_min) | (inclination_deg > i_max)] = -np.inf
+    log_prior[(inclination_deg < i_min) | (inclination_deg > i_max)] = -np.inf
 
     return log_prior
 
@@ -67,7 +64,7 @@ def log_uniform_prior(
     Log prior for a uniform distribution; values outside the range are truncated to -inf
     """
     x = np.atleast_1d(x)
-    log_prior = -np.log(x_max - x_min) * np.ones_like(x, dtype=float)
+    log_prior = np.full_like(x, -np.log(x_max - x_min), dtype=float)
 
     log_prior[(x < x_min) | (x > x_max)] = -np.inf
 
@@ -122,9 +119,10 @@ def log_prior(
     log_p += log_inclination_prior(inclination)
 
     # Planetary parameters
+    sin_i = np.sin(np.radians(inclination))
     for i in range(system_obs.n_planets):
         # First of all, check true mass is smaller than the star mass
-        true_mass = minimum_masses[..., i] / np.sin(np.radians(inclination))
+        true_mass = minimum_masses[..., i] / sin_i
         log_p += log_uniform_prior(true_mass, 0, star_mass * constants.MSUN_MEARTH)
 
         # Minimum masses

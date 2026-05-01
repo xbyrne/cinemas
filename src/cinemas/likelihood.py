@@ -31,23 +31,41 @@ def create_rebound_simulations(
     if omegas is None:
         omegas = np.zeros_like(masses)
 
-    if (isinstance(star_mass, np.ndarray) and star_mass.ndim == 1) or isinstance(
-        star_mass, list
+    star_mass = np.atleast_1d(star_mass)
+    masses = np.atleast_2d(masses)
+    periods = np.atleast_2d(periods)
+    eccentricities = np.atleast_2d(eccentricities)
+    omegas = np.atleast_2d(omegas)
+
+    simulations = []
+
+    for star_mass_val, mass, period, ecc, omega in zip(
+        star_mass, masses, periods, eccentricities, omegas
     ):
-        # Multiple simulations
-        simulations = []
+        simulations.append(
+            create_single_rebound_simulation(star_mass_val, mass, period, ecc, omega)
+        )
 
-        for star_mass_val, mass, period, ecc, omega in zip(
-            star_mass, masses, periods, eccentricities, omegas
-        ):
-            # Recursion ftw
-            simulations.append(
-                create_rebound_simulations(star_mass_val, mass, period, ecc, omega)
-            )
+    return simulations
 
-        return simulations
 
-    # Single simulation
+def create_single_rebound_simulation(
+    star_mass: float,
+    masses: np.ndarray,
+    periods: np.ndarray,
+    eccentricities: np.ndarray = None,
+    omegas: np.ndarray = None,
+) -> Simulation:
+    """
+    Create a single REBOUND simulation for a given set of orbital parameters.
+    Masses should be in Earth masses, and periods in days.
+    Eccentricities and omegas are optional, and will be set to 0 if not provided.
+    """
+    if eccentricities is None:
+        eccentricities = np.zeros_like(masses)
+    if omegas is None:
+        omegas = np.zeros_like(masses)
+
     sim = Simulation()
 
     sim.add(m=star_mass)
