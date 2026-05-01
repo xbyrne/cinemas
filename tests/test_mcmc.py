@@ -78,6 +78,31 @@ class TestLogPosterior:
         assert captured["theta"].shape[0] == 2
         assert np.allclose(log_post, [11.0, -np.inf, 23.0])
 
+    def test_log_posterior_2d_skips_likelihood_when_no_samples_are_physical(
+        self, simple_system_observations, monkeypatch
+    ):
+        """An all-unphysical batch should not call the likelihood at all."""
+
+        def fake_log_prior(theta, system_obs):
+            return np.array([-np.inf, -np.inf])
+
+        def fake_log_likelihood(theta, spock_classifier):
+            raise AssertionError("Likelihood should not be called for empty batch")
+
+        monkeypatch.setattr(mcmc.priors, "log_prior", fake_log_prior)
+        monkeypatch.setattr(mcmc.likelihood, "log_likelihood", fake_log_likelihood)
+
+        theta = np.array(
+            [
+                [45.0, 1.0, 1.0, 2.0, 10.0, 20.0, 0.1, 0.2, 180.0, 200.0],
+                [50.0, 1.2, 1.1, 2.1, 9.0, 19.0, 0.12, 0.22, 170.0, 210.0],
+            ]
+        )
+
+        log_post = mcmc.log_posterior(theta, simple_system_observations)
+
+        assert np.all(np.isneginf(log_post))
+
     def test_log_posterior_raises_for_invalid_theta_dim(
         self, simple_system_observations
     ):
@@ -332,9 +357,12 @@ class TestRunMCMCSampling:
         theta = np.zeros((2, n_params))
 
         # Monkeypatch priors.log_prior to return one -inf and one finite value
-        monkeypatch.setattr("cinemas.priors.log_prior", lambda th, so: np.array([-np.inf, 0.0]))
+        monkeypatch.setattr(
+            "cinemas.priors.log_prior",
+            lambda th, so: np.array([-np.inf, 0.0])
+        )
 
-        # Monkeypatch likelihood.log_likelihood to be called for the single finite sample
+        # Monkeypatch likelihood.log_likelihood to be called for the single sample
         monkeypatch.setattr(
             "cinemas.likelihood.log_likelihood", lambda th, sp: np.array([0.123])
         )

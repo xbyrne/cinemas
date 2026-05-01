@@ -36,8 +36,11 @@ def log_posterior(
 
     elif theta.ndim == 2:  # and hence log_p is an array of shape (n_samples,)
         unphysical_samples = ~np.isfinite(log_p)
-        log_l = likelihood.log_likelihood(theta[~unphysical_samples], spock_classifier)
-        log_p[~unphysical_samples] += log_l
+        if not np.all(unphysical_samples):
+            log_l = likelihood.log_likelihood(
+                theta[~unphysical_samples], spock_classifier
+            )
+            log_p[~unphysical_samples] += log_l
 
     else:
         raise AssertionError(
@@ -85,7 +88,7 @@ def generate_initial_states(
         )
 
     print(f"Found {nwalkers} valid initial states in {attempt + 1} tries.")
-    initial_states = np.array(initial_states)
+    initial_states = np.stack(initial_states)
     return initial_states
 
 
