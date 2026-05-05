@@ -88,7 +88,7 @@ class SystemObservations:
         if omegas is None:
             omegas = np.random.uniform(0, 360, size=self.n_planets)
 
-        sim = likelihood.create_rebound_simulations(
+        sim = likelihood.create_single_rebound_simulation(
             star_mass=self.star_mass.mean,
             masses=[minimum_mass_obs.mean for minimum_mass_obs in self.minimum_masses],
             periods=[period_obs.mean for period_obs in self.periods],
