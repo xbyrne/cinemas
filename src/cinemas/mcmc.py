@@ -188,6 +188,7 @@ def run_mcmc_sampling(
     sampler.run_mcmc(initial_states, nsteps, progress=True)
 
     samples = sampler.get_chain()
+    log_probs = sampler.get_log_prob()
     acceptance_fraction = sampler.acceptance_fraction
     try:
         tau = sampler.get_autocorr_time()
@@ -198,4 +199,4 @@ def run_mcmc_sampling(
         )
         tau = -1.0
 
-    return samples, tau, acceptance_fraction
+    return samples, log_probs, tau, acceptance_fraction
