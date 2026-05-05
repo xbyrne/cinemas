@@ -15,6 +15,7 @@ from .dataloading import (
     package_planet_observations,
 )
 from .mcmc import run_mcmc_sampling
+from .nested_sampling import run_nested_sampling
 
 __all__ = [
     "__version__",
@@ -22,4 +23,5 @@ __all__ = [
     "load_system_observations",
     "package_planet_observations",
     "run_mcmc_sampling",
+    "run_nested_sampling",
 ]
