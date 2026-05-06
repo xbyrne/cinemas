@@ -57,10 +57,12 @@ def select_compact_multiplanet_rv_systems(
     Exoplanet Archive-style catalogue.
     """
     compact_multiplanet_rv_systems = exoplanet_catalogue.groupby("hostname").filter(
-        lambda x: (x["discoverymethod"] == "Radial Velocity").all()
-        & (len(x) > 2)
-        & is_compact(x)
-        & (x["pl_controv_flag"] == 0).all()
+        lambda x: (
+            (x["discoverymethod"] == "Radial Velocity").all()
+            & (len(x) > 2)
+            & is_compact(x)
+            & (x["pl_controv_flag"] == 0).all()
+        )
     )
 
     return compact_multiplanet_rv_systems
@@ -89,6 +91,7 @@ def get_system_data(star_name: str, catalogue: pd.DataFrame) -> pd.DataFrame:
 
     system_catalogue = catalogue[catalogue["hostname"] == star_name]
     system_data = system_catalogue[constants.ALL_FIELDS].copy()
+    system_data = system_data.sort_values("pl_orbper")
 
     return system_data
 
