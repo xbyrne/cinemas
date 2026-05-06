@@ -19,7 +19,7 @@ def create_rebound_simulations(
     masses: np.ndarray,
     periods: np.ndarray,
     eccentricities: np.ndarray = None,
-    omegas: np.ndarray = None,
+    d_omegas: np.ndarray = None,
 ) -> Simulation | list[Simulation]:
     """
     Create REBOUND simulations for a given set of orbital parameters.
@@ -28,22 +28,24 @@ def create_rebound_simulations(
     """
     if eccentricities is None:
         eccentricities = np.zeros_like(masses)
-    if omegas is None:
-        omegas = np.zeros_like(masses)
+    if d_omegas is None:
+        d_omegas = np.zeros_like(masses)
 
     star_mass = np.atleast_1d(star_mass)
     masses = np.atleast_2d(masses)
     periods = np.atleast_2d(periods)
     eccentricities = np.atleast_2d(eccentricities)
-    omegas = np.atleast_2d(omegas)
+    d_omegas = np.atleast_2d(d_omegas)
 
     simulations = []
 
-    for star_mass_val, mass, period, ecc, omega in zip(
-        star_mass, masses, periods, eccentricities, omegas
+    for star_mass_, masses_, periods_, eccentricities_, d_omegas_ in zip(
+        star_mass, masses, periods, eccentricities, d_omegas
     ):
         simulations.append(
-            create_single_rebound_simulation(star_mass_val, mass, period, ecc, omega)
+            create_single_rebound_simulation(
+                star_mass_, masses_, periods_, eccentricities_, d_omegas_
+            )
         )
 
     return simulations
@@ -54,7 +56,7 @@ def create_single_rebound_simulation(
     masses: np.ndarray,
     periods: np.ndarray,
     eccentricities: np.ndarray = None,
-    omegas: np.ndarray = None,
+    d_omegas: np.ndarray = None,
 ) -> Simulation:
     """
     Create a single REBOUND simulation for a given set of orbital parameters.
@@ -63,8 +65,10 @@ def create_single_rebound_simulation(
     """
     if eccentricities is None:
         eccentricities = np.zeros_like(masses)
-    if omegas is None:
-        omegas = np.zeros_like(masses)
+
+    if d_omegas is None:
+        d_omegas = np.zeros(len(masses) - 1)  # Omegas are relative to first planet
+    omegas = np.concatenate([[0], d_omegas])  # Add the first planet's omega (0)
 
     sim = Simulation()
 
@@ -85,7 +89,7 @@ def create_rebound_simulations_from_theta(
     The shape of `theta` should be either (n_parameters,) or (n_samples, n_parameters).
     """
 
-    star_mass, inclination, minimum_masses, periods, eccentricities, omegas = (
+    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
         unpack_theta(theta)
     )
 
@@ -99,7 +103,7 @@ def create_rebound_simulations_from_theta(
     masses = minimum_masses / np.sin(np.radians(inclination))
 
     return create_rebound_simulations(
-        star_mass, masses, periods, eccentricities, omegas
+        star_mass, masses, periods, eccentricities, d_omegas
     )
 
 
@@ -108,23 +112,25 @@ def unpack_theta(theta: np.ndarray):
     Unpack the parameter vector `theta` into its components.
     `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
     where n_parameters = 2 + 4 * n_planets (inclination, star mass, minimum masses,
-    periods, eccentricities, omegas).
+    periods, eccentricities, d_omegas).
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
 
-    assert (
-        theta.shape[-1] - 2
-    ) % 4 == 0, "`theta` should have 2 + 4 * n_planets parameters"
-    n_planets = (theta.shape[-1] - 2) // 4
+    assert (theta.shape[-1] - 1) % 4 == 0, (
+        "`theta` should have 1 + 4 * n_planets parameters: "
+        + " (stellar mass, inclination, n_planets*(minimum mass, period, eccentricity),"
+        + " (n_planets - 1) * d_omega)."
+    )
+    n_planets = (theta.shape[-1] - 1) // 4
 
     inclination = theta[..., 0]
     star_mass = theta[..., 1]
     minimum_masses = theta[..., 2 : 2 + n_planets]
     periods = theta[..., 2 + n_planets : 2 + 2 * n_planets]
     eccentricities = theta[..., 2 + 2 * n_planets : 2 + 3 * n_planets]
-    omegas = theta[..., 2 + 3 * n_planets : 2 + 4 * n_planets]
+    d_omegas = theta[..., 2 + 3 * n_planets :]
 
-    return star_mass, inclination, minimum_masses, periods, eccentricities, omegas
+    return star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas
 
 
 # ===================

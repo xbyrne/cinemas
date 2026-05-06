@@ -105,7 +105,7 @@ def log_prior(
     `theta` can be either a 1D array (single parameter set) or a 2D array (multiple
     parameter sets; shape (n_samples, n_parameters)).
     """
-    star_mass, inclination, minimum_masses, periods, eccentricities, omegas = (
+    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
         unpack_theta(theta)
     )
 
@@ -137,7 +137,9 @@ def log_prior(
             system_obs.eccentricities[i],
             maximum=1.0,
         )
-        # Omegas (uniform between 0 and 360)
-        log_p += log_uniform_prior(omegas[..., i], 0, 360)
+
+    # Omegas (uniform between 0 and 360)
+    for i in range(system_obs.n_planets - 1):  # Omegas are relative to first planet
+        log_p += log_uniform_prior(d_omegas[..., i], 0, 360)
 
     return log_p

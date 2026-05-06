@@ -124,7 +124,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         a_max=None,
     )
     eccentricities = np.random.uniform(0, 1e-2, size=system_obs.n_planets)
-    omegas = np.random.uniform(175, 185, size=system_obs.n_planets)
+    d_omegas = np.random.uniform(175, 185, size=system_obs.n_planets - 1)
 
     proposed_theta = np.concatenate(
         (
@@ -132,7 +132,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
             minimum_masses,
             periods,
             eccentricities,
-            omegas,
+            d_omegas,
         )
     )
     return proposed_theta
@@ -168,8 +168,8 @@ def run_mcmc_sampling(
     n_planets = system_obs.n_planets
 
     if nwalkers is None:
-        print("Number of walkers not specified. Using default of 2(2 + 4 n_planets),")
-        nwalkers = 2 * (2 + 4 * n_planets)
+        print("Number of walkers not specified. Using default of 2(1 + 4 n_planets),")
+        nwalkers = 2 * (1 + 4 * n_planets)
         print(f" which in this case is {nwalkers} walkers ({n_planets} planets).")
 
     if initial_states is None:
@@ -180,7 +180,7 @@ def run_mcmc_sampling(
 
     sampler = EnsembleSampler(
         nwalkers=nwalkers,
-        ndim=2 + 4 * system_obs.n_planets,
+        ndim=1 + 4 * system_obs.n_planets,
         log_prob_fn=log_posterior,
         args=[system_obs, spock_classifier],
         vectorize=True,
