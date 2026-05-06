@@ -10,11 +10,52 @@ from spock import FeatureClassifier
 
 from . import constants
 
-# =================
-# REBOUND functions
+
+# ===================
+# Likelihood function
 
 
-def create_single_rebound_simulation(
+def log_likelihood(
+    theta: np.ndarray, spock_classifier: FeatureClassifier = None
+) -> float | np.ndarray:
+    """
+    Log likelihood for the stability of the system, as predicted by SPOCK.
+    `theta` must be a 1D array (single parameter set).
+    """
+
+    if spock_classifier is None:
+        print(
+            "Warning: No SPOCK classifier provided; creating a new one."
+            " This is inefficient; if you need to call this function multiple times,"
+            " consider passing a single classifier."
+        )
+        spock_classifier = FeatureClassifier()
+
+    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
+        unpack_theta(theta)
+    )
+
+    inclination = np.atleast_1d(inclination)
+
+    sim = create_rebound_simulation(
+        star_mass,
+        minimum_masses / np.sin(np.radians(inclination)),
+        periods,
+        eccentricities,
+        d_omegas,
+    )
+
+    stability_prob = spock_classifier.predict_stable(sim)
+    log_prob = np.log(stability_prob)
+
+    return log_prob
+
+
+# ================
+# Helper functions
+
+
+def create_rebound_simulation(
     star_mass: float,
     masses: np.ndarray,
     periods: np.ndarray,
@@ -44,7 +85,6 @@ def create_single_rebound_simulation(
     return sim
 
 
-
 def unpack_theta(theta: np.ndarray):
     """
     Unpack the parameter vector `theta` into its components.
@@ -69,43 +109,3 @@ def unpack_theta(theta: np.ndarray):
     d_omegas = theta[..., 2 + 3 * n_planets :]
 
     return star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas
-
-
-# ===================
-# Likelihood function
-
-
-def log_likelihood(
-    theta: np.ndarray, spock_classifier: FeatureClassifier = None
-) -> float | np.ndarray:
-    """
-    Log likelihood for the stability of the system, as predicted by SPOCK.
-    `theta` must be a 1D array (single parameter set).
-    """
-
-    if spock_classifier is None:
-        print(
-            "Warning: No SPOCK classifier provided; creating a new one."
-            " This is inefficient; if you need to call this function multiple times,"
-            " consider passing a single classifier."
-        )
-        spock_classifier = FeatureClassifier()
-
-    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
-        unpack_theta(theta)
-    )
-
-    inclination = np.atleast_1d(inclination)
-
-    sim = create_single_rebound_simulation(
-        star_mass,
-        minimum_masses / np.sin(np.radians(inclination)),
-        periods,
-        eccentricities,
-        d_omegas,
-    )
-
-    stability_prob = spock_classifier.predict_stable(sim)
-    log_prob = np.log(stability_prob)
-
-    return log_prob
