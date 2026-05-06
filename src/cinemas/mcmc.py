@@ -4,6 +4,10 @@ mcmc.py
 Functions for running MCMC sampling for the CINEMAS package, using the emcee library.
 """
 
+import multiprocessing
+from multiprocessing import Pool
+import os
+
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
 import numpy as np
@@ -12,40 +16,29 @@ from tqdm import tqdm
 
 from . import likelihood, observation_classes as obs, priors
 
+multiprocessing.set_start_method("fork")
+os.environ["OMP_NUM_THREADS"] = "1"  # Avoid OpenMP issues with multiprocessing
+
 
 # ==================
 # Posterior function
 
+spock_classifier = FeatureClassifier()  # Load the SPOCK classifier once at module level
+
 
 def log_posterior(
-    theta: np.ndarray,
-    system_obs: obs.SystemObservations,
-    spock_classifier: FeatureClassifier = None,
+    theta: np.ndarray, system_obs: obs.SystemObservations
 ) -> float | np.ndarray:
 
     log_p = priors.log_prior(theta, system_obs)
 
-    if theta.ndim == 1:  # and hence log_p is scalar
-        if not np.isfinite(log_p):
-            # Zero prior probability, so posterior is zero regardless of likelihood
-            return -np.inf
+    if not np.isfinite(log_p):
+        # Zero prior probability, so posterior is zero regardless of likelihood
+        return -np.inf
 
-        # Finite log_p, so we evaluate the likelihood
-        log_l = likelihood.log_likelihood(theta, spock_classifier)
-        log_p += log_l
-
-    elif theta.ndim == 2:  # and hence log_p is an array of shape (n_samples,)
-        unphysical_samples = ~np.isfinite(log_p)
-        if not np.all(unphysical_samples):
-            log_l = likelihood.log_likelihood(
-                theta[~unphysical_samples], spock_classifier
-            )
-            log_p[~unphysical_samples] += log_l
-
-    else:
-        raise AssertionError(
-            f"`theta` should be either 1D or 2D array; got shape {theta.shape}"
-        )
+    # Finite log_p, so we evaluate the likelihood
+    log_l = likelihood.log_likelihood(theta, spock_classifier)
+    log_p += log_l
 
     return log_p
 
@@ -55,39 +48,28 @@ def log_posterior(
 
 
 def generate_initial_states(
-    system_obs: obs.SystemObservations, nwalkers: int, max_tries: int = 1000
+    system_obs: obs.SystemObservations, nwalkers: int
 ) -> np.ndarray:
     """
     Generate initial states for the MCMC walkers
     """
     initial_states = []
     progress_bar = tqdm(
-        total=nwalkers, desc="Generating initial states", unit="walkers"
+        total=nwalkers, desc="Generating initial states", unit=" walkers"
     )
-    spock_classifier = FeatureClassifier()
 
-    for attempt in range(max_tries):
+    for walker in tqdm(range(nwalkers)):
         theta_0 = propose_theta(system_obs)
-        lp = log_posterior(theta_0, system_obs, spock_classifier)
 
-        if np.isfinite(lp):
-            initial_states.append(theta_0)
-            progress_bar.update(1)
+        initial_states.append(theta_0)
+        progress_bar.update(1)
 
-        progress_bar.set_postfix({"Tries": f"{attempt + 1}/{max_tries}"})
+        progress_bar.set_postfix({"Tries": f"{walker + 1}/{nwalkers}"})
         if len(initial_states) >= nwalkers:
             break
 
     progress_bar.close()
 
-    if len(initial_states) < nwalkers:
-        raise ValueError(
-            f"Could not generate enough initial states within {max_tries} tries."
-            f" Found {len(initial_states)}/{nwalkers} valid initial states."
-            f" Consider increasing `max_tries` or relaxing the priors."
-        )
-
-    print(f"Found {nwalkers} valid initial states in {attempt + 1} tries.")
     initial_states = np.stack(initial_states)
     return initial_states
 
@@ -176,16 +158,15 @@ def run_mcmc_sampling(
         # Initialize walkers in a small Gaussian ball around the observed values
         initial_states = generate_initial_states(system_obs, nwalkers)
 
-    spock_classifier = FeatureClassifier()
-
-    sampler = EnsembleSampler(
-        nwalkers=nwalkers,
-        ndim=1 + 4 * system_obs.n_planets,
-        log_prob_fn=log_posterior,
-        args=[system_obs, spock_classifier],
-        vectorize=True,
-    )
-    sampler.run_mcmc(initial_states, nsteps, progress=True)
+    with Pool() as pool:
+        sampler = EnsembleSampler(
+            nwalkers=nwalkers,
+            ndim=1 + 4 * system_obs.n_planets,
+            log_prob_fn=log_posterior,
+            args=(system_obs,),
+            pool=pool,
+        )
+        sampler.run_mcmc(initial_states, nsteps, progress=True)
 
     samples = sampler.get_chain()
     log_probs = sampler.get_log_prob()

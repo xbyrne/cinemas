@@ -14,43 +14,6 @@ from . import constants
 # REBOUND functions
 
 
-def create_rebound_simulations(
-    star_mass: float | np.ndarray,
-    masses: np.ndarray,
-    periods: np.ndarray,
-    eccentricities: np.ndarray = None,
-    d_omegas: np.ndarray = None,
-) -> Simulation | list[Simulation]:
-    """
-    Create REBOUND simulations for a given set of orbital parameters.
-    Masses should be in Earth masses, and periods in days.
-    Eccentricities and omegas are optional, and will be set to 0 if not provided.
-    """
-    if eccentricities is None:
-        eccentricities = np.zeros_like(masses)
-    if d_omegas is None:
-        d_omegas = np.zeros_like(masses)
-
-    star_mass = np.atleast_1d(star_mass)
-    masses = np.atleast_2d(masses)
-    periods = np.atleast_2d(periods)
-    eccentricities = np.atleast_2d(eccentricities)
-    d_omegas = np.atleast_2d(d_omegas)
-
-    simulations = []
-
-    for star_mass_, masses_, periods_, eccentricities_, d_omegas_ in zip(
-        star_mass, masses, periods, eccentricities, d_omegas
-    ):
-        simulations.append(
-            create_single_rebound_simulation(
-                star_mass_, masses_, periods_, eccentricities_, d_omegas_
-            )
-        )
-
-    return simulations
-
-
 def create_single_rebound_simulation(
     star_mass: float,
     masses: np.ndarray,
@@ -80,31 +43,6 @@ def create_single_rebound_simulation(
     sim.move_to_com()
     return sim
 
-
-def create_rebound_simulations_from_theta(
-    theta: np.ndarray,
-) -> Simulation | list[Simulation]:
-    """
-    Creates REBOUND simulation(s) from the parameter vector `theta`.
-    The shape of `theta` should be either (n_parameters,) or (n_samples, n_parameters).
-    """
-
-    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
-        unpack_theta(theta)
-    )
-
-    # minimum_masses are either of shape (n_planets,) or (n_samples, n_planets);
-    # inclination is either of shape (1,) or (n_samples,).
-    # We want the true masses, which are minimum_masses / sin(inclination).
-    # To do this, we need to ensure that the shapes are compatible for broadcasting.
-    if inclination.ndim == 1 and minimum_masses.ndim == 2:
-        inclination = inclination[:, None]
-
-    masses = minimum_masses / np.sin(np.radians(inclination))
-
-    return create_rebound_simulations(
-        star_mass, masses, periods, eccentricities, d_omegas
-    )
 
 
 def unpack_theta(theta: np.ndarray):
@@ -142,8 +80,7 @@ def log_likelihood(
 ) -> float | np.ndarray:
     """
     Log likelihood for the stability of the system, as predicted by SPOCK.
-    `theta` can be either a 1D array (single parameter set) or a 2D array (multiple
-    parameter sets; shape (n_samples, n_parameters)).
+    `theta` must be a 1D array (single parameter set).
     """
 
     if spock_classifier is None:
@@ -154,9 +91,21 @@ def log_likelihood(
         )
         spock_classifier = FeatureClassifier()
 
-    sims = create_rebound_simulations_from_theta(theta)
+    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
+        unpack_theta(theta)
+    )
 
-    stability_prob = spock_classifier.predict_stable(sims)
+    inclination = np.atleast_1d(inclination)
+
+    sim = create_single_rebound_simulation(
+        star_mass,
+        minimum_masses / np.sin(np.radians(inclination)),
+        periods,
+        eccentricities,
+        d_omegas,
+    )
+
+    stability_prob = spock_classifier.predict_stable(sim)
     log_prob = np.log(stability_prob)
 
     return log_prob
