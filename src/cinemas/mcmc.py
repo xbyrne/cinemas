@@ -25,10 +25,28 @@ os.environ["OMP_NUM_THREADS"] = "1"  # Avoid OpenMP issues with multiprocessing
 
 spock_classifier = FeatureClassifier()  # Load the SPOCK classifier once at module level
 
+# Module-level place to hold the SystemObservations currently being sampled.
+# This allows `log_posterior` to access the observation data without it being
+# passed as an argument to `EnsembleSampler.log_prob_fn`, which avoids costly
+# argument pickling when using a multiprocessing pool.
+current_system_obs: obs.SystemObservations | None = None
 
-def log_posterior(
-    theta: np.ndarray, system_obs: obs.SystemObservations
-) -> float | np.ndarray:
+
+def log_posterior(theta: np.ndarray) -> float | np.ndarray:
+    """Compute log posterior for parameter vector `theta`.
+
+    This function reads `current_system_obs` from module scope rather than
+    receiving it as an argument. Callers must ensure `current_system_obs` is
+    set (e.g. by `run_mcmc_sampling`) before invoking the sampler.
+    """
+    global current_system_obs
+
+    if current_system_obs is None:
+        raise RuntimeError(
+            "current_system_obs is not set. Call run_mcmc_sampling which sets it."
+        )
+
+    system_obs = current_system_obs
 
     log_p = priors.log_prior(theta, system_obs)
 
@@ -158,15 +176,24 @@ def run_mcmc_sampling(
         # Initialize walkers in a small Gaussian ball around the observed values
         initial_states = generate_initial_states(system_obs, nwalkers)
 
-    with Pool() as pool:
-        sampler = EnsembleSampler(
-            nwalkers=nwalkers,
-            ndim=1 + 4 * system_obs.n_planets,
-            log_prob_fn=log_posterior,
-            args=(system_obs,),
-            pool=pool,
-        )
-        sampler.run_mcmc(initial_states, nsteps, progress=True)
+    # Set the module-level `current_system_obs` so that `log_posterior`
+    # can access it without requiring it to be passed to the sampler (and
+    # therefore avoiding repeated pickling when using multiprocessing).
+    global current_system_obs
+    current_system_obs = system_obs
+
+    try:
+        with Pool() as pool:
+            sampler = EnsembleSampler(
+                nwalkers=nwalkers,
+                ndim=1 + 4 * system_obs.n_planets,
+                log_prob_fn=log_posterior,
+                pool=pool,
+            )
+            sampler.run_mcmc(initial_states, nsteps, progress=True)
+    finally:
+        # Clear the global to avoid retaining large observation objects.
+        current_system_obs = None
 
     samples = sampler.get_chain()
     log_probs = sampler.get_log_prob()
