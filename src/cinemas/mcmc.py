@@ -10,6 +10,7 @@ import os
 
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
+from emcee.moves import DEMove, DESnookerMove
 import numpy as np
 from spock import FeatureClassifier
 from tqdm import tqdm
@@ -68,6 +69,7 @@ def run_mcmc_sampling(
                 ndim=1 + 4 * system_obs.n_planets,
                 log_prob_fn=log_posterior,
                 pool=pool,
+                moves=[(DEMove(), 0.9), (DESnookerMove(), 0.1)],
             )
             sampler.run_mcmc(initial_states, nsteps, progress=True)
     finally:
