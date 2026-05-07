@@ -69,7 +69,7 @@ def run_mcmc_sampling(
                 ndim=1 + 4 * system_obs.n_planets,
                 log_prob_fn=log_posterior,
                 pool=pool,
-                moves=[(DEMove(), 0.9), (DESnookerMove(), 0.1)],
+                moves=[(DEMove(gamma0=0.2), 0.9), (DESnookerMove(), 0.1)],
             )
             sampler.run_mcmc(initial_states, nsteps, progress=True)
     finally:
