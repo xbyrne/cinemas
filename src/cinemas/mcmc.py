@@ -36,8 +36,9 @@ current_system_obs: obs.SystemObservations | None = None
 
 def run_mcmc_sampling(
     system_obs: obs.SystemObservations,
+    nsteps: int = 10000,
     nwalkers: int = None,
-    nsteps: int = 1000,
+    moves: list[tuple] = None,
     initial_states: np.ndarray = None,
 ) -> tuple[np.ndarray, float, float]:
     """
@@ -54,9 +55,14 @@ def run_mcmc_sampling(
     n_planets = system_obs.n_planets
 
     if nwalkers is None:
-        print("Number of walkers not specified. Using default of 2(1 + 4 n_planets),")
-        nwalkers = 2 * (1 + 4 * n_planets)
+        print("Number of walkers not specified. Using default of 3(1 + 4 n_planets),")
+        # Factor of 3 is a trade-off between better sampling and longer runtime
+        nwalkers = 3 * (1 + 4 * n_planets)
         print(f" which in this case is {nwalkers} walkers ({n_planets} planets).")
+
+    if moves is None:
+        # Optimised set of moves
+        moves = [(DEMove(gamma0=0.2), 0.9), (DESnookerMove(), 0.1)]
 
     if initial_states is None:
         # Initialize walkers in a small Gaussian ball around the observed values
@@ -64,12 +70,15 @@ def run_mcmc_sampling(
 
     try:
         with Pool() as pool:
+            # ^ Multiprocessing turns out to be faster than vectorising
+            # Effectively, parallelising seems to be quicker at the `emcee` level than
+            # at the `SPOCK` level.
             sampler = EnsembleSampler(
                 nwalkers=nwalkers,
                 ndim=1 + 4 * system_obs.n_planets,
                 log_prob_fn=log_posterior,
                 pool=pool,
-                moves=[(DEMove(gamma0=0.2), 0.9), (DESnookerMove(), 0.1)],
+                moves=moves,
             )
             sampler.run_mcmc(initial_states, nsteps, progress=True)
     finally:
