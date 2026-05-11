@@ -31,7 +31,7 @@ def log_likelihood(
         )
         spock_classifier = FeatureClassifier()
 
-    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
+    inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas = (
         unpack_theta(theta)
     )
 
@@ -89,7 +89,7 @@ def unpack_theta(theta: np.ndarray):
     """
     Unpack the parameter vector `theta` into its components.
     `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
-    where n_parameters = 2 + 4 * n_planets (inclination, star mass, minimum masses,
+    where n_parameters = 1 + 4 * n_planets (inclination, star mass, minimum masses,
     periods, eccentricities, d_omegas).
     """
     assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
