@@ -6,6 +6,7 @@ Functions for running nested sampling using dynesty for the CINEMAS package.
 
 import numpy as np
 from dynesty import NestedSampler
+from dynesty.pool import Pool
 from scipy.stats import norm, truncnorm
 from spock import FeatureClassifier
 
@@ -15,8 +16,9 @@ from . import observation_classes as obs
 
 def run_nested_sampling(
     system_obs: obs.SystemObservations,
-    nlive: int = 1000,
+    nlive: int = 500,
     dlogz: float = 0.5,
+    checkpoint_file: str | None = None,
 ) -> tuple[np.ndarray, float, float]:
     """
     Run nested sampling using dynesty to obtain posterior samples for the system
@@ -27,25 +29,50 @@ def run_nested_sampling(
     system_obs : obs.SystemObservations
         The system observations object containing priors and constraints.
     nlive : int, optional
-        Number of live points for nested sampling (default: 1000).
+        Number of live points for nested sampling (default: 500).
     dlogz : float, optional
         Tolerance on log evidence; sampling stops when contribution falls below
         this (default: 0.5).
+    checkpoint_file : str | None, optional
+        Path to the checkpoint file for resuming sampling (default: None).
     """
 
-    n_params = 2 + 4 * system_obs.n_planets
+    if checkpoint_file is not None:
+        checkpoint_every = 600  # Save checkpoint every 10 minutes
+    else:
+        checkpoint_every = None
+
+    n_params = 1 + 4 * system_obs.n_planets
+    periodic_indices = list(
+        range(2 + 3 * system_obs.n_planets, n_params)
+    )  # Relative omegas are periodic
+
     spock_classifier = FeatureClassifier()
 
-    sampler = NestedSampler(
+    with Pool(
+        10,
         likelihood.log_likelihood,
         prior_transform,
         logl_args=(spock_classifier,),
         ptform_args=(system_obs,),
-        ndim=n_params,
-    )
+    ) as pool:
+        sampler = NestedSampler(
+            pool.loglike,
+            pool.prior_transform,
+            ndim=n_params,
+            nlive=nlive,
+            periodic=periodic_indices,
+            pool=pool,
+        )
 
-    sampler.run_nested(nlive=nlive, dlogz=dlogz)
+        sampler.run_nested(
+            dlogz=dlogz,
+            checkpoint_file=checkpoint_file,
+            checkpoint_every=checkpoint_every,
+        )
+
     results = sampler.results
+    results.summary()  # Print summary of results to console
 
     return results
 
@@ -68,7 +95,7 @@ def prior_transform(u: np.ndarray, system_obs: obs.SystemObservations) -> np.nda
     """
 
     n_planets = system_obs.n_planets
-    n_params = 2 + 4 * n_planets
+    n_params = 1 + 4 * n_planets
 
     theta = np.zeros((n_params,))
 
@@ -93,8 +120,9 @@ def prior_transform(u: np.ndarray, system_obs: obs.SystemObservations) -> np.nda
         theta[2 + 2 * n_planets + i] = _transform_observation(
             u[2 + 2 * n_planets + i], system_obs.eccentricities[i], clip=(0, 0.999)
         )
-        # Argument of periastron: uniform [0, 360]
-        theta[2 + 3 * n_planets + i] = 360 * u[2 + 3 * n_planets + i]
+        # Relative arguments of periastron: uniform [0, 360]
+        if i < n_planets - 1:
+            theta[2 + 3 * n_planets + i] = 360 * u[2 + 3 * n_planets + i]
 
     return theta
 
