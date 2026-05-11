@@ -108,4 +108,4 @@ def unpack_theta(theta: np.ndarray):
     eccentricities = theta[..., 2 + 2 * n_planets : 2 + 3 * n_planets]
     d_omegas = theta[..., 2 + 3 * n_planets :]
 
-    return star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas
+    return inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas

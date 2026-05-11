@@ -22,7 +22,7 @@ def log_prior(
     `theta` can be either a 1D array (single parameter set) or a 2D array (multiple
     parameter sets; shape (n_samples, n_parameters)).
     """
-    star_mass, inclination, minimum_masses, periods, eccentricities, d_omegas = (
+    inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas = (
         unpack_theta(theta)
     )
 
@@ -30,10 +30,10 @@ def log_prior(
     # - a scalar (if `theta` is 1D); or
     # - an array of shape (n_samples,) (if `theta` is 2D).
 
-    # Star mass
-    log_p = _log_prior_single_parameter(star_mass, system_obs.star_mass)
     # Inclination
-    log_p += log_inclination_prior(inclination)
+    log_p = log_inclination_prior(inclination)
+    # Star mass
+    log_p += _log_prior_single_parameter(star_mass, system_obs.star_mass)
 
     # Planetary parameters
     sin_i = np.sin(np.radians(inclination))
