@@ -17,9 +17,6 @@ from tqdm import tqdm
 
 from . import likelihood, observation_classes as obs, priors
 
-multiprocessing.set_start_method("fork")
-os.environ["OMP_NUM_THREADS"] = "1"
-
 
 # Module-level place to hold the SystemObservations and FeatureClassifiers.
 # This allows `log_posterior` to access the classifier and data without them being
@@ -45,6 +42,9 @@ def run_mcmc_sampling(
     Run MCMC sampling to obtain posterior samples for the system parameters.
     If given, `initial_states` should be an array of shape (nwalkers, n_parameters).
     """
+    # Multiprocessing configs
+    multiprocessing.set_start_method("fork")
+    os.environ["OMP_NUM_THREADS"] = "1"
 
     # Set the module-level `current_system_obs` so that `log_posterior`
     # can access it without requiring it to be passed to the sampler (and
