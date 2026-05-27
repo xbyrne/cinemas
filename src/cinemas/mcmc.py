@@ -4,9 +4,7 @@ mcmc.py
 Functions for running MCMC sampling for the CINEMAS package, using the emcee library.
 """
 
-import multiprocessing
 from multiprocessing import Pool
-import os
 
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
@@ -17,15 +15,7 @@ from tqdm import tqdm
 
 from . import likelihood, observation_classes as obs, priors
 
-
-# Module-level place to hold the SystemObservations and FeatureClassifiers.
-# This allows `log_posterior` to access the classifier and data without them being
-# passed as arguments to `EnsembleSampler.log_prob_fn`, which avoids costly
-# argument pickling when using a multiprocessing pool.
-
 spock_classifier = FeatureClassifier()  # Load the SPOCK classifier once at module level
-current_system_obs: obs.SystemObservations | None = None
-
 
 ## ========
 ## Run MCMC
@@ -42,22 +32,13 @@ def run_mcmc_sampling(
     Run MCMC sampling to obtain posterior samples for the system parameters.
     If given, `initial_states` should be an array of shape (nwalkers, n_parameters).
     """
-    # Multiprocessing configs
-    multiprocessing.set_start_method("fork")
-    os.environ["OMP_NUM_THREADS"] = "1"
-
-    # Set the module-level `current_system_obs` so that `log_posterior`
-    # can access it without requiring it to be passed to the sampler (and
-    # therefore avoiding repeated pickling when using multiprocessing).
-    global current_system_obs
-    current_system_obs = system_obs
 
     n_planets = system_obs.n_planets
 
     if nwalkers is None:
-        print("Number of walkers not specified. Using default of 3(1 + 4 n_planets),")
+        print("Number of walkers not specified. Using default of 3 * 5 n_planets,")
         # Factor of 3 is a trade-off between better sampling and longer runtime
-        nwalkers = 3 * (1 + 4 * n_planets)
+        nwalkers = 3 * (5 * n_planets)
         print(f" which in this case is {nwalkers} walkers ({n_planets} planets).")
 
     if moves is None:
@@ -68,22 +49,19 @@ def run_mcmc_sampling(
         # Initialize walkers in a small Gaussian ball around the observed values
         initial_states = generate_initial_states(system_obs, nwalkers)
 
-    try:
-        with Pool() as pool:
-            # ^ Multiprocessing turns out to be faster than vectorising
-            # Effectively, parallelising seems to be quicker at the `emcee` level than
-            # at the `SPOCK` level.
-            sampler = EnsembleSampler(
-                nwalkers=nwalkers,
-                ndim=1 + 4 * system_obs.n_planets,
-                log_prob_fn=log_posterior,
-                pool=pool,
-                moves=moves,
-            )
-            sampler.run_mcmc(initial_states, nsteps, progress=True)
-    finally:
-        # Clear the global to avoid retaining large observation objects.
-        current_system_obs = None
+    with Pool() as pool:
+        # ^ Multiprocessing turns out to be faster than vectorising
+        # Effectively, parallelising seems to be quicker at the `emcee` level than
+        # at the `SPOCK` level.
+        sampler = EnsembleSampler(
+            nwalkers=nwalkers,
+            ndim=5 * system_obs.n_planets,
+            log_prob_fn=log_posterior,
+            args=(system_obs,),
+            pool=pool,
+            moves=moves,
+        )
+        sampler.run_mcmc(initial_states, nsteps, progress=True)
 
     samples = sampler.get_chain()
     log_probs = sampler.get_log_prob()
@@ -104,22 +82,12 @@ def run_mcmc_sampling(
 # Posterior function
 
 
-def log_posterior(theta: np.ndarray) -> float | np.ndarray:
-    """Compute log posterior for parameter vector `theta`.
-
-    This function reads `current_system_obs` from module scope rather than
-    receiving it as an argument. Callers must ensure `current_system_obs` is
-    set (e.g. by `run_mcmc_sampling`) before invoking the sampler.
+def log_posterior(
+    theta: np.ndarray, system_obs: obs.SystemObservations
+) -> float | np.ndarray:
     """
-    global current_system_obs
-
-    if current_system_obs is None:
-        raise RuntimeError(
-            "current_system_obs is not set. Call run_mcmc_sampling which sets it."
-        )
-
-    system_obs = current_system_obs
-
+    Compute log posterior for parameter vector `theta`.
+    """
     log_p = priors.log_prior(theta, system_obs)
 
     if not np.isfinite(log_p):
@@ -143,11 +111,6 @@ def generate_initial_states(
     """
     Generate initial states for the MCMC walkers
     """
-    global current_system_obs
-    if current_system_obs is None:
-        raise RuntimeError(
-            "current_system_obs is not set. Call run_mcmc_sampling which sets it."
-        )
 
     initial_states = []
     progress_bar = tqdm(
@@ -156,7 +119,7 @@ def generate_initial_states(
 
     for attempt in range(max_tries):
         theta_0 = propose_theta(system_obs)
-        lp = log_posterior(theta_0)
+        lp = log_posterior(theta_0, system_obs)
 
         if np.isfinite(lp):
             initial_states.append(theta_0)
@@ -211,7 +174,8 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
         a_max=None,
     )
     eccentricities = np.random.uniform(0, 1e-2, size=system_obs.n_planets)
-    d_omegas = np.random.uniform(0, 360, size=system_obs.n_planets - 1)
+    longitudes_of_periastron = np.random.uniform(0, 360, size=system_obs.n_planets - 1)
+    true_anomalies = np.random.uniform(0, 360, size=system_obs.n_planets - 1)
 
     proposed_theta = np.concatenate(
         (
@@ -219,7 +183,8 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
             minimum_masses,
             periods,
             eccentricities,
-            d_omegas,
+            longitudes_of_periastron,
+            true_anomalies,
         )
     )
     return proposed_theta

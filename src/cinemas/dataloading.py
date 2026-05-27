@@ -175,3 +175,41 @@ def get_average_param_error(planet_data_row: pd.Series, param_name: str) -> floa
         np.abs(planet_data_row[f"{param_name}err1"])
         + np.abs(planet_data_row[f"{param_name}err2"])  # This one is -ve.
     )
+
+
+def unpack_theta(theta: np.ndarray):
+    """
+    Unpack the parameter vector `theta` into its components.
+    `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
+    where n_parameters = 5 * n_planets (inclination, star mass, minimum masses,
+    periods, eccentricities and, for all but the first planet, longitudes of periastron
+    and true anomalies).
+    (WLOG we choose a reference direction aligned with the first planet's periastron,
+    and a reference time such that the first planet's true anomaly is 0.)
+    """
+    assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
+
+    assert theta.shape[-1] % 5 == 0, (
+        "`theta` should have 5 * n_planets parameters: "
+        + " (inclination, stellar mass, n_planets*(minimum mass, period, eccentricity),"
+        + " (n_planets - 1) * (longitude_of_periastron, true_anomaly)."
+    )
+    n_planets = theta.shape[-1] // 5
+
+    inclination = theta[..., 0]
+    star_mass = theta[..., 1]
+    minimum_masses = theta[..., 2 : 2 + n_planets]
+    periods = theta[..., 2 + n_planets : 2 + 2 * n_planets]
+    eccentricities = theta[..., 2 + 2 * n_planets : 2 + 3 * n_planets]
+    longitudes_of_periastron = theta[..., 2 + 3 * n_planets : 1 + 4 * n_planets]
+    true_anomalies = theta[..., 1 + 4 * n_planets :]
+
+    return (
+        inclination,
+        star_mass,
+        minimum_masses,
+        periods,
+        eccentricities,
+        longitudes_of_periastron,
+        true_anomalies,
+    )

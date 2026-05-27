@@ -8,8 +8,7 @@ import numpy as np
 from rebound import Simulation
 from spock import FeatureClassifier
 
-from . import constants
-
+from . import constants, dataloading
 
 # ===================
 # Likelihood function
@@ -31,9 +30,15 @@ def log_likelihood(
         )
         spock_classifier = FeatureClassifier()
 
-    inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas = (
-        unpack_theta(theta)
-    )
+    (
+        inclination,
+        star_mass,
+        minimum_masses,
+        periods,
+        eccentricities,
+        longitudes_of_periastron,
+        true_anomalies,
+    ) = dataloading.unpack_theta(theta)
 
     inclination = np.atleast_1d(inclination)
 
@@ -42,7 +47,8 @@ def log_likelihood(
         minimum_masses / np.sin(np.radians(inclination)),
         periods,
         eccentricities,
-        d_omegas,
+        longitudes_of_periastron,
+        true_anomalies,
     )
 
     stability_prob = spock_classifier.predict_stable(sim)
@@ -60,52 +66,42 @@ def create_rebound_simulation(
     masses: np.ndarray,
     periods: np.ndarray,
     eccentricities: np.ndarray = None,
-    d_omegas: np.ndarray = None,
+    longitudes_of_periastron: np.ndarray = None,
+    true_anomalies: np.ndarray = None,
 ) -> Simulation:
     """
     Create a single REBOUND simulation for a given set of orbital parameters.
     Masses should be in Earth masses, and periods in days.
-    Eccentricities and omegas are optional, and will be set to 0 if not provided.
+    Eccentricities, longitudes of periastron, and true anomalies are optional, and will
+    be set to 0 if not provided. WLOG cinemas chooses a reference direction aligned with
+    the first planet's periastron, and a reference time such that the first planet's
+    true anomaly is 0.
     """
+    # e
     if eccentricities is None:
         eccentricities = np.zeros_like(masses)
 
-    if d_omegas is None:
-        d_omegas = np.zeros(len(masses) - 1)  # Omegas are relative to first planet
-    omegas = np.concatenate([[0], d_omegas])  # Add the first planet's omega (0)
+    # pomega
+    if longitudes_of_periastron is None:
+        longitudes_of_periastron = np.zeros(len(masses) - 1)
+        # Longitudes of periastron are relative to first^^^ planet
+    # Add the first planet's longitude of periastron (0)
+    longitudes_of_periastron = np.concatenate([[0], longitudes_of_periastron])
+
+    # f
+    if true_anomalies is None:
+        true_anomalies = np.zeros(len(masses) - 1)
+        # True anomalies are relative to first^^^ planet
+    true_anomalies = np.concatenate([[0.0], true_anomalies])
 
     sim = Simulation()
 
     sim.add(m=star_mass)
 
-    for mass, period, ecc, omega in zip(masses, periods, eccentricities, omegas):
-        sim.add(m=mass / constants.MSUN_MEARTH, P=period, e=ecc, omega=omega)
+    for mass, period, ecc, pomega, f in zip(
+        masses, periods, eccentricities, longitudes_of_periastron, true_anomalies
+    ):
+        sim.add(m=mass / constants.MSUN_MEARTH, P=period, e=ecc, pomega=pomega, f=f)
 
     sim.move_to_com()
     return sim
-
-
-def unpack_theta(theta: np.ndarray):
-    """
-    Unpack the parameter vector `theta` into its components.
-    `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
-    where n_parameters = 1 + 4 * n_planets (inclination, star mass, minimum masses,
-    periods, eccentricities, d_omegas).
-    """
-    assert theta.ndim in [1, 2], "`theta` should be either 1D or 2D array"
-
-    assert (theta.shape[-1] - 1) % 4 == 0, (
-        "`theta` should have 1 + 4 * n_planets parameters: "
-        + " (stellar mass, inclination, n_planets*(minimum mass, period, eccentricity),"
-        + " (n_planets - 1) * d_omega)."
-    )
-    n_planets = (theta.shape[-1] - 1) // 4
-
-    inclination = theta[..., 0]
-    star_mass = theta[..., 1]
-    minimum_masses = theta[..., 2 : 2 + n_planets]
-    periods = theta[..., 2 + n_planets : 2 + 2 * n_planets]
-    eccentricities = theta[..., 2 + 2 * n_planets : 2 + 3 * n_planets]
-    d_omegas = theta[..., 2 + 3 * n_planets :]
-
-    return inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas

@@ -6,8 +6,7 @@ Prior probability functions for the CINEMAS analysis.
 
 import numpy as np
 
-from . import constants, observation_classes as obs
-from .likelihood import unpack_theta
+from . import constants, dataloading, observation_classes as obs
 
 
 ## ==============
@@ -22,9 +21,15 @@ def log_prior(
     `theta` can be either a 1D array (single parameter set) or a 2D array (multiple
     parameter sets; shape (n_samples, n_parameters)).
     """
-    inclination, star_mass, minimum_masses, periods, eccentricities, d_omegas = (
-        unpack_theta(theta)
-    )
+    (
+        inclination,
+        star_mass,
+        minimum_masses,
+        periods,
+        eccentricities,
+        longitudes_of_periastron,
+        true_anomalies,
+    ) = dataloading.unpack_theta(theta)
 
     # Each of the following contributions to the log_prior should either be
     # - a scalar (if `theta` is 1D); or
@@ -55,9 +60,14 @@ def log_prior(
             maximum=1.0,
         )
 
-    # Omegas (uniform between 0 and 360)
-    for i in range(system_obs.n_planets - 1):  # Omegas are relative to first planet
-        log_p += log_uniform_prior(d_omegas[..., i], 0, 360)
+    for i in range(system_obs.n_planets - 1):
+        # Longitudes of periastron (uniform between 0 and 360)
+        # (n_planets - 1 because longitudes are relative to first planet)
+        log_p += log_uniform_prior(longitudes_of_periastron[..., i], 0, 360)
+
+        # True anomalies (uniform between 0 and 360)
+        # (n_planets - 1 because we choose wlog to start the sims at a time when f_1=0)
+        log_p += log_uniform_prior(true_anomalies[..., i], 0, 360)
 
     return log_p
 

@@ -10,8 +10,7 @@ from dynesty.pool import Pool
 from scipy.stats import norm, truncnorm
 from spock import FeatureClassifier
 
-from . import constants, likelihood
-from . import observation_classes as obs
+from . import constants, likelihood, observation_classes as obs
 
 
 def run_nested_sampling(
@@ -42,10 +41,9 @@ def run_nested_sampling(
     else:
         checkpoint_every = None
 
-    n_params = 1 + 4 * system_obs.n_planets
-    periodic_indices = list(
-        range(2 + 3 * system_obs.n_planets, n_params)
-    )  # Relative omegas are periodic
+    n_params = 5 * system_obs.n_planets
+    periodic_indices = list(range(2 + 3 * system_obs.n_planets, n_params))
+    # ^including the longitudes of periastron and true anomalies, which are periodic
 
     spock_classifier = FeatureClassifier()
 
@@ -95,7 +93,7 @@ def prior_transform(u: np.ndarray, system_obs: obs.SystemObservations) -> np.nda
     """
 
     n_planets = system_obs.n_planets
-    n_params = 1 + 4 * n_planets
+    n_params = 5 * n_planets
 
     theta = np.zeros((n_params,))
 
@@ -120,9 +118,13 @@ def prior_transform(u: np.ndarray, system_obs: obs.SystemObservations) -> np.nda
         theta[2 + 2 * n_planets + i] = _transform_observation(
             u[2 + 2 * n_planets + i], system_obs.eccentricities[i], clip=(0, 0.999)
         )
-        # Relative arguments of periastron: uniform [0, 360]
+        # Relative longitudes of periastron: uniform [0, 360]
         if i < n_planets - 1:
             theta[2 + 3 * n_planets + i] = 360 * u[2 + 3 * n_planets + i]
+
+        # True anomalies: planets 2..n are uniform [0, 360]
+        if i < n_planets - 1:
+            theta[1 + 4 * n_planets + i] = 360 * u[1 + 4 * n_planets + i]
 
     return theta
 

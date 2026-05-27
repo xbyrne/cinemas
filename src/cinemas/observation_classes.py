@@ -80,20 +80,22 @@ class SystemObservations:
         self.periods = [planet.period for planet in planet_observations]
         self.eccentricities = [planet.eccentricity for planet in planet_observations]
 
-    def plot(self, show_eccentricities=False, d_omegas=None, **kwargs):
+    def plot(self, show_eccentricities=False, longitudes_of_periastron=None, **kwargs):
         if show_eccentricities:
             eccentricities = [eccentricity.mean for eccentricity in self.eccentricities]
         else:
             eccentricities = np.zeros(self.n_planets)
-        if d_omegas is None:
-            d_omegas = np.random.uniform(0, 360, size=self.n_planets - 1)
+        if longitudes_of_periastron is None:
+            longitudes_of_periastron = np.random.uniform(
+                0, 360, size=self.n_planets - 1
+            )
 
         sim = likelihood.create_rebound_simulation(
             star_mass=self.star_mass.mean,
             masses=[minimum_mass_obs.mean for minimum_mass_obs in self.minimum_masses],
             periods=[period_obs.mean for period_obs in self.periods],
             eccentricities=eccentricities,
-            d_omegas=d_omegas,
+            longitudes_of_periastron=longitudes_of_periastron,
         )
 
         orbit_plot = rebound.OrbitPlot(sim, **kwargs)
