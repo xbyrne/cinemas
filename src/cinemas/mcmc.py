@@ -147,7 +147,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
     Propose a single parameter vector `theta`, by sampling from the priors.
     This is used to generate initial states for the MCMC walkers.
     """
-    inclination_deg = np.random.uniform(55, 60)
+    cos_i = np.random.uniform(0, 1)
     stellar_mass = np.clip(
         _propose_from_observation(system_obs.star_mass),
         a_min=0.01,
@@ -179,7 +179,7 @@ def propose_theta(system_obs: obs.SystemObservations) -> np.ndarray:
 
     proposed_theta = np.concatenate(
         (
-            [inclination_deg, stellar_mass],
+            [cos_i, stellar_mass],
             minimum_masses,
             periods,
             eccentricities,

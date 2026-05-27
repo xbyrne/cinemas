@@ -22,7 +22,7 @@ def log_prior(
     parameter sets; shape (n_samples, n_parameters)).
     """
     (
-        inclination,
+        cos_i,
         star_mass,
         minimum_masses,
         periods,
@@ -35,13 +35,13 @@ def log_prior(
     # - a scalar (if `theta` is 1D); or
     # - an array of shape (n_samples,) (if `theta` is 2D).
 
-    # Inclination
-    log_p = log_inclination_prior(inclination)
+    # Inclination (first parameter is `cos(i)`; prior is uniform on [0,1])
+    log_p = log_uniform_prior(cos_i, 0.0, 1.0)
     # Star mass
     log_p += _log_prior_single_parameter(star_mass, system_obs.star_mass)
 
     # Planetary parameters
-    sin_i = np.sin(np.radians(inclination))
+    sin_i = np.sqrt(np.clip(1.0 - cos_i ** 2, 0.0, 1.0))
     for i in range(system_obs.n_planets):
         # First of all, check true mass is smaller than the star mass
         true_mass = minimum_masses[..., i] / sin_i
@@ -74,28 +74,6 @@ def log_prior(
 
 ## =========================================
 ## Prior functions for individual parameters
-
-# -----------
-# Inclination
-
-
-def log_inclination_prior(
-    inclination_deg: float | np.ndarray, i_min=constants.I_MIN, i_max=constants.I_MAX
-) -> float | np.ndarray:
-    """
-    Log prior for the inclination of a planet, assuming isotropic orientations.
-    """
-    inclination_deg = np.atleast_1d(inclination_deg)
-
-    log_prior = np.log(np.sin(np.radians(np.clip(inclination_deg, i_min, i_max))))
-
-    log_prior[(inclination_deg < i_min) | (inclination_deg > i_max)] = -np.inf
-
-    return log_prior
-
-
-# ------
-# Others
 
 
 def _log_prior_single_parameter(

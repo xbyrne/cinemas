@@ -32,8 +32,3 @@ DEFAULT_DOWNLOAD_PATH = (
 # Physical constants
 
 MSUN_MEARTH = 333_000
-
-# ------
-# Priors
-
-I_MIN, I_MAX = 0.1, 90.0

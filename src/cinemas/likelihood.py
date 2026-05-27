@@ -31,7 +31,7 @@ def log_likelihood(
         spock_classifier = FeatureClassifier()
 
     (
-        inclination,
+        cos_i,
         star_mass,
         minimum_masses,
         periods,
@@ -40,11 +40,14 @@ def log_likelihood(
         true_anomalies,
     ) = dataloading.unpack_theta(theta)
 
-    inclination = np.atleast_1d(inclination)
+    cos_i = np.atleast_1d(cos_i)
+
+    # Compute sin(i) from cos(i) robustly
+    sin_i = np.sqrt(np.clip(1.0 - cos_i ** 2, 0.0, 1.0))
 
     sim = create_rebound_simulation(
         star_mass,
-        minimum_masses / np.sin(np.radians(inclination)),
+        minimum_masses / sin_i,
         periods,
         eccentricities,
         longitudes_of_periastron,

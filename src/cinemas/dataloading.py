@@ -181,7 +181,7 @@ def unpack_theta(theta: np.ndarray):
     """
     Unpack the parameter vector `theta` into its components.
     `theta` should either be of shape (n_parameters,) or (n_samples, n_parameters),
-    where n_parameters = 5 * n_planets (inclination, star mass, minimum masses,
+    where n_parameters = 5 * n_planets (cos(i), star mass, minimum masses,
     periods, eccentricities and, for all but the first planet, longitudes of periastron
     and true anomalies).
     (WLOG we choose a reference direction aligned with the first planet's periastron,
@@ -191,12 +191,12 @@ def unpack_theta(theta: np.ndarray):
 
     assert theta.shape[-1] % 5 == 0, (
         "`theta` should have 5 * n_planets parameters: "
-        + " (inclination, stellar mass, n_planets*(minimum mass, period, eccentricity),"
+        + " (cos i, stellar mass, n_planets*(minimum mass, period, eccentricity),"
         + " (n_planets - 1) * (longitude_of_periastron, true_anomaly)."
     )
     n_planets = theta.shape[-1] // 5
 
-    inclination = theta[..., 0]
+    cos_i = theta[..., 0]
     star_mass = theta[..., 1]
     minimum_masses = theta[..., 2 : 2 + n_planets]
     periods = theta[..., 2 + n_planets : 2 + 2 * n_planets]
@@ -205,7 +205,7 @@ def unpack_theta(theta: np.ndarray):
     true_anomalies = theta[..., 1 + 4 * n_planets :]
 
     return (
-        inclination,
+        cos_i,
         star_mass,
         minimum_masses,
         periods,

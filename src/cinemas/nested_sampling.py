@@ -10,7 +10,7 @@ from dynesty.pool import Pool
 from scipy.stats import norm, truncnorm
 from spock import FeatureClassifier
 
-from . import constants, likelihood, observation_classes as obs
+from . import likelihood, observation_classes as obs
 
 
 def run_nested_sampling(
@@ -98,9 +98,7 @@ def prior_transform(u: np.ndarray, system_obs: obs.SystemObservations) -> np.nda
     theta = np.zeros((n_params,))
 
     # Inclinations
-    cos_imin = np.cos(np.radians(constants.I_MIN))
-    cos_imax = np.cos(np.radians(constants.I_MAX))
-    theta[0] = np.degrees(np.arccos(cos_imin - (cos_imin - cos_imax) * u[0]))
+    theta[0] = u[0]  # cos(i) uniform on [0, 1]
 
     # Stellar mass: use observation distribution
     theta[1] = _transform_observation(u[1], system_obs.star_mass, clip=(0, np.inf))
