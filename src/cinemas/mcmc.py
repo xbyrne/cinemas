@@ -5,6 +5,7 @@ Functions for running MCMC sampling for the CINEMAS package, using the emcee lib
 """
 
 from multiprocessing import Pool
+import os
 
 from emcee import EnsembleSampler
 from emcee.autocorr import AutocorrError
@@ -15,7 +16,10 @@ from tqdm import tqdm
 
 from . import likelihood, observation_classes as obs, priors
 
+os.environ["OMP_NUM_THREADS"] = "1"
+
 spock_classifier = FeatureClassifier()  # Load the SPOCK classifier once at module level
+current_system_obs: obs.SystemObservations | None = None
 
 ## ========
 ## Run MCMC
@@ -49,19 +53,24 @@ def run_mcmc_sampling(
         # Initialize walkers in a small Gaussian ball around the observed values
         initial_states = generate_initial_states(system_obs, nwalkers)
 
-    with Pool() as pool:
-        # ^ Multiprocessing turns out to be faster than vectorising
-        # Effectively, parallelising seems to be quicker at the `emcee` level than
-        # at the `SPOCK` level.
-        sampler = EnsembleSampler(
-            nwalkers=nwalkers,
-            ndim=5 * system_obs.n_planets,
-            log_prob_fn=log_posterior,
-            args=(system_obs,),
-            pool=pool,
-            moves=moves,
-        )
-        sampler.run_mcmc(initial_states, nsteps, progress=True)
+    global current_system_obs
+    current_system_obs = system_obs
+
+    try:
+        with Pool() as pool:
+            # ^ Multiprocessing turns out to be faster than vectorising
+            # Effectively, parallelising seems to be quicker at the `emcee` level than
+            # at the `SPOCK` level.
+            sampler = EnsembleSampler(
+                nwalkers=nwalkers,
+                ndim=5 * system_obs.n_planets,
+                log_prob_fn=log_posterior,
+                pool=pool,
+                moves=moves,
+            )
+            sampler.run_mcmc(initial_states, nsteps, progress=True)
+    finally:
+        current_system_obs = None  # Clear global variable
 
     samples = sampler.get_chain()
     log_probs = sampler.get_log_prob()
@@ -82,12 +91,21 @@ def run_mcmc_sampling(
 # Posterior function
 
 
-def log_posterior(
-    theta: np.ndarray, system_obs: obs.SystemObservations
-) -> float | np.ndarray:
+def log_posterior(theta: np.ndarray) -> float | np.ndarray:
     """
     Compute log posterior for parameter vector `theta`.
     """
+    if current_system_obs is None:
+        raise RuntimeError("global 'current_system_obs' is not set")
+
+    return _log_posterior(theta, current_system_obs)
+
+
+def _log_posterior(
+    theta: np.ndarray, system_obs: obs.SystemObservations
+) -> float | np.ndarray:
+    """Compute the posterior for a specific `system_obs` instance."""
+
     log_p = priors.log_prior(theta, system_obs)
 
     if not np.isfinite(log_p):
@@ -119,7 +137,7 @@ def generate_initial_states(
 
     for attempt in range(max_tries):
         theta_0 = propose_theta(system_obs)
-        lp = log_posterior(theta_0, system_obs)
+        lp = _log_posterior(theta_0, system_obs)
 
         if np.isfinite(lp):
             initial_states.append(theta_0)
