@@ -80,6 +80,13 @@ class SystemObservations:
         self.periods = [planet.period for planet in planet_observations]
         self.eccentricities = [planet.eccentricity for planet in planet_observations]
 
+    def add_planet(self, planet_observation: PlanetObservations):
+        self.planet_observations.append(planet_observation)
+        self.n_planets += 1
+        self.minimum_masses.append(planet_observation.minimum_mass)
+        self.periods.append(planet_observation.period)
+        self.eccentricities.append(planet_observation.eccentricity)
+
     def plot(
         self,
         show_eccentricities=False,
