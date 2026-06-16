@@ -32,6 +32,8 @@ cd cinemas
 pip install -e ".[dev]"
 ```
 
+(Note that there is sometimes a bug in `SPOCK` where its pre-integration step only does one step. You may need to install `SPOCK` from [my fork](https://github.com/xbyrne/spock), or look at [this pull request](https://github.com/dtamayo/spock/pull/51). Sorry I can't ship this updated version of `SPOCK` directly with the pip package; PyPI doesn't like dependencies from git repos)
+
 ## Quickstart
 
 ### Loading observational data

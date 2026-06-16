@@ -26,7 +26,7 @@ dependencies = [
     "tqdm>=4.50",
     "emcee>=3.0",
     "rebound>=3.0",
-    "spock @ git+https://github.com/xbyrne/spock.git",
+    "spock>1.0",
     "pyvo>=1.0",
 ]
 
